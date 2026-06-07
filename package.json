@@ -73,7 +73,6 @@
     "apps/*",
     "libs/api/products",
     "libs/shared/*",
-    "libs/shop/*",
-    "spotify-mosaic"
+    "libs/shop/*"
   ]
 }
