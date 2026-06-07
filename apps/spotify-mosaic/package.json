@@ -1,5 +1,23 @@
 {
   "name": "@org/spotify-mosaic",
   "version": "0.0.1",
-  "private": true
+  "private": true,
+  "nx": {
+    "projectType": "application"
+  },
+  "dependencies": {
+    "@org/models": "0.0.1",
+    "@org/mosaic-utils": "0.0.1",
+    "@org/session": "0.0.1",
+    "@org/spotify-api": "0.0.1",
+    "@emotion/react": "^11.13.0",
+    "@emotion/styled": "^11.13.0",
+    "@mui/material": "^7.0.0",
+    "react": "19.0.0",
+    "react-dom": "19.0.0",
+    "react-ga4": "^2.1.0",
+    "react-indiana-drag-scroll": "^2.2.0",
+    "react-router-dom": "6.30.3",
+    "swiper": "^11.2.0"
+  }
 }

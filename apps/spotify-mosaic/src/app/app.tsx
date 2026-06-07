@@ -1,52 +1,71 @@
-// Uncomment this line to use CSS modules
-// import styles from './app.module.css';
-import NxWelcome from './nx-welcome';
+import { HashRouter as Router, Routes, Route } from 'react-router-dom';
+import { useEffect } from 'react';
+import Box from '@mui/material/Box';
+import ReactGA from 'react-ga4';
+import * as constants from '@org/spotify-api';
+import { SessionProvider } from '@org/session';
+import Playlist from '../features/playlists/SelectPlaylist';
+import Mosaic from '../features/mosaic/Mosaic';
+import ConnectToSpotify from '../features/auth/ConnectToSpotify';
+import SelectImage from '../features/image/SelectImage';
 
-import { Route, Routes, Link } from 'react-router-dom';
+const centerSx = {
+  display: 'flex',
+  justifyContent: 'center',
+  flexDirection: 'column',
+  alignItems: 'center',
+  height: '100%',
+  width: '100%',
+} as const;
 
-export function App() {
+const App = () => {
+  useEffect(() => {
+    ReactGA.initialize('G-JQQCW8E695');
+  }, []);
   return (
-    <div>
-      <NxWelcome title="@org/spotify-mosaic" />
-
-      {/* START: routes */}
-      {/* These routes and navigation have been generated for you */}
-      {/* Feel free to move and update them to fit your needs */}
-      <br />
-      <hr />
-      <br />
-      <div role="navigation">
-        <ul>
-          <li>
-            <Link to="/">Home</Link>
-          </li>
-          <li>
-            <Link to="/page-2">Page 2</Link>
-          </li>
-        </ul>
-      </div>
-      <Routes>
-        <Route
-          path="/"
-          element={
-            <div>
-              This is the generated root route.{' '}
-              <Link to="/page-2">Click here for page 2.</Link>
-            </div>
-          }
-        />
-        <Route
-          path="/page-2"
-          element={
-            <div>
-              <Link to="/">Click here to go back to root page.</Link>
-            </div>
-          }
-        />
-      </Routes>
-      {/* END: routes */}
-    </div>
+    <SessionProvider>
+      <Router>
+        <Routes>
+          <Route
+            path={constants.select_playlist_url}
+            element={
+              <Box sx={centerSx}>
+                <Playlist />
+              </Box>
+            }
+          />
+          <Route
+            path={constants.select_image_url}
+            element={
+              <Box sx={centerSx}>
+                <SelectImage />
+              </Box>
+            }
+          />
+          <Route path={constants.create_mosaic_url} element={<Mosaic />} />
+          <Route
+            path="/"
+            element={
+              <Box sx={centerSx}>
+                <ConnectToSpotify />
+              </Box>
+            }
+          />
+          {/* Spotify PKCE redirect lands on `/?code=...&state=...` (query, no
+              hash), so HashRouter renders the `/` route (ConnectToSpotify),
+              which performs the token exchange. Catch-all guards stray paths. */}
+          <Route
+            path="*"
+            element={
+              <Box sx={centerSx}>
+                <Playlist />
+              </Box>
+            }
+          />
+        </Routes>
+      </Router>
+    </SessionProvider>
   );
-}
+};
 
 export default App;

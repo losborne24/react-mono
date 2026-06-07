@@ -30,8 +30,7 @@
           "buildDepsName": "build-deps",
           "watchDepsName": "watch-deps"
         }
-      },
-      "exclude": ["libs/shared/models/*"]
+      }
     },
     {
       "plugin": "@nx/react/router-plugin",

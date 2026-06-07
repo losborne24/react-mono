@@ -8,6 +8,18 @@
     },
     {
       "path": "./apps/spotify-mosaic"
+    },
+    {
+      "path": "./libs/shared/models"
+    },
+    {
+      "path": "./libs/shared/spotify-api"
+    },
+    {
+      "path": "./libs/shared/mosaic-utils"
+    },
+    {
+      "path": "./libs/shared/session"
     }
   ]
 }

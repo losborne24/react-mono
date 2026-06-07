@@ -1,26 +1,16 @@
 import { render } from '@testing-library/react';
-import { BrowserRouter } from 'react-router-dom';
 
 import App from './app';
 
 describe('App', () => {
   it('should render successfully', () => {
-    const { baseElement } = render(
-      <BrowserRouter>
-        <App />
-      </BrowserRouter>,
-    );
+    // App provides its own HashRouter + SessionProvider.
+    const { baseElement } = render(<App />);
     expect(baseElement).toBeTruthy();
   });
 
-  it('should have a greeting as the title', () => {
-    const { getAllByText } = render(
-      <BrowserRouter>
-        <App />
-      </BrowserRouter>,
-    );
-    expect(
-      getAllByText(new RegExp('Welcome @org/spotify-mosaic', 'gi')).length > 0,
-    ).toBeTruthy();
+  it('should show the Spotify Mosaic heading on the landing route', () => {
+    const { getByText } = render(<App />);
+    expect(getByText('Spotify Mosaic')).toBeTruthy();
   });
 });

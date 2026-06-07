@@ -1,1 +1,32 @@
-/* You can add global styles to this file, and also import other style files */
+/* Global styles (migrated from src/styles/index.scss + custom-swiper.scss). */
+html {
+  height: 100%;
+}
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  height: 100%;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+#root {
+  height: 100%;
+  background-color: rgba(250, 250, 250, 255);
+}
+
+/* Swiper navigation buttons (was custom-swiper.scss). */
+.swiper-button-next,
+.swiper-button-prev {
+  background-color: white;
+  border-radius: 50%;
+  height: 60px;
+  width: 60px;
+}

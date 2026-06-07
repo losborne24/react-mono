@@ -1,0 +1,16 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist",
+    "tsBuildInfoFile": "dist/tsconfig.lib.tsbuildinfo",
+    "emitDeclarationOnly": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "lib": ["es2022", "dom", "dom.iterable"],
+    "forceConsistentCasingInFileNames": true,
+    "types": ["node", "vite/client"]
+  },
+  "include": ["src/**/*.ts"],
+  "references": [{ "path": "../models/tsconfig.lib.json" }]
+}
