@@ -1,0 +1,28 @@
+{
+  "version": "6.0",
+  "nxVersion": "22.7.5",
+  "pathMappings": {},
+  "nxJsonPlugins": [],
+  "fileMap": {
+    "nonProjectFiles": [
+      {
+        "file": "README.md",
+        "hash": "15992961374889900691"
+      },
+      {
+        "file": "nx.json",
+        "hash": "18336426213955174907"
+      },
+      {
+        "file": "package-lock.json",
+        "hash": "726927746562396818"
+      },
+      {
+        "file": "package.json",
+        "hash": "8583530721766076219"
+      }
+    ],
+    "projectFileMap": {}
+  },
+  "externalNodesHash": "18216166031406030076"
+}
