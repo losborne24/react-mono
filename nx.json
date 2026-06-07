@@ -1,10 +1,7 @@
 {
   "$schema": "./node_modules/nx/schemas/nx-schema.json",
   "namedInputs": {
-    "default": [
-      "{projectRoot}/**/*",
-      "sharedGlobals"
-    ],
+    "default": ["{projectRoot}/**/*", "sharedGlobals"],
     "production": [
       "default",
       "!{projectRoot}/.eslintrc.json",
@@ -21,9 +18,7 @@
     {
       "plugin": "@nx/js/typescript",
       "options": {
-        "typecheck": {
-          "targetName": "typecheck"
-        },
+        "typecheck": { "targetName": "typecheck" },
         "build": {
           "targetName": "build",
           "configName": "tsconfig.lib.json",
@@ -31,9 +26,7 @@
           "watchDepsName": "watch-deps"
         }
       },
-      "exclude": [
-        "libs/shared/models/*"
-      ]
+      "exclude": ["libs/shared/models/*"]
     },
     {
       "plugin": "@nx/react/router-plugin",
@@ -46,12 +39,7 @@
         "typecheckTargetName": "typecheck"
       }
     },
-    {
-      "plugin": "@nx/eslint/plugin",
-      "options": {
-        "targetName": "lint"
-      }
-    },
+    { "plugin": "@nx/eslint/plugin", "options": { "targetName": "lint" } },
     {
       "plugin": "@nx/vite/plugin",
       "options": {
@@ -67,54 +55,26 @@
     },
     {
       "plugin": "@nx/playwright/plugin",
-      "options": {
-        "targetName": "e2e",
-        "ciTargetName": "e2e-ci"
-      }
+      "options": { "targetName": "e2e", "ciTargetName": "e2e-ci" }
     },
     {
       "plugin": "@nx/js/typescript",
-      "include": [
-        "libs/shared/models/*"
-      ],
-      "options": {
-        "typecheck": {
-          "targetName": "typecheck"
-        }
-      }
+      "include": ["libs/shared/models/*"],
+      "options": { "typecheck": { "targetName": "typecheck" } }
     },
-    {
-      "plugin": "@nx/vitest",
-      "options": {
-        "testTargetName": "test"
-      }
-    }
+    { "plugin": "@nx/vitest", "options": { "testTargetName": "test" } }
   ],
   "targetDefaults": {
-    "test": {
-      "dependsOn": [
-        "^build"
-      ]
-    },
+    "test": { "dependsOn": ["^build"] },
     "@nx/esbuild:esbuild": {
       "cache": true,
-      "dependsOn": [
-        "^build"
-      ],
-      "inputs": [
-        "production",
-        "^production"
-      ]
+      "dependsOn": ["^build"],
+      "inputs": ["production", "^production"]
     },
     "@nx/js:tsc": {
       "cache": true,
-      "dependsOn": [
-        "^build"
-      ],
-      "inputs": [
-        "production",
-        "^production"
-      ]
+      "dependsOn": ["^build"],
+      "inputs": ["production", "^production"]
     }
   },
   "generators": {
@@ -125,9 +85,7 @@
         "linter": "eslint",
         "bundler": "vite"
       },
-      "component": {
-        "style": "css"
-      },
+      "component": { "style": "css" },
       "library": {
         "style": "css",
         "linter": "eslint",
@@ -135,6 +93,6 @@
       }
     }
   },
-  "nxCloudId": "6a2529aead6793caf922afa4",
+  "nxCloudId": "6a252e78f656a5ea0af8d663",
   "analytics": false
 }
