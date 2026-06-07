@@ -32,6 +32,12 @@
     },
     {
       "path": "./libs/shared/test-utils"
+    },
+    {
+      "path": "./spotify-mosaic-e2e"
+    },
+    {
+      "path": "./spotify-mosaic"
     }
   ]
 }
