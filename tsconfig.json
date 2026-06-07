@@ -38,6 +38,9 @@
     },
     {
       "path": "./spotify-mosaic"
+    },
+    {
+      "path": "./kitchen-sink"
     }
   ]
 }
