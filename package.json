@@ -74,7 +74,6 @@
     "libs/api/products",
     "libs/shared/*",
     "libs/shop/*",
-    "spotify-mosaic",
-    "kitchen-sink"
+    "spotify-mosaic"
   ]
 }
