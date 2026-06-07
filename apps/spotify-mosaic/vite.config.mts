@@ -5,13 +5,14 @@ import react from '@vitejs/plugin-react';
 export default defineConfig(() => ({
   root: import.meta.dirname,
   cacheDir: '../node_modules/.vite/spotify-mosaic',
+  // Must match the Spotify OAuth redirect URI (constants.ts redirect_uri).
   server: {
-    port: 4201,
-    host: 'localhost',
+    port: 3000,
+    host: '127.0.0.1',
   },
   preview: {
-    port: 4201,
-    host: 'localhost',
+    port: 3000,
+    host: '127.0.0.1',
   },
   plugins: [react()],
   // Uncomment this if you are using workers.
