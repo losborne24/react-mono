@@ -1,5 +1,5 @@
 {
-  "name": "@org/mosaify",
+  "name": "@react-mono/mosaify",
   "version": "0.0.1",
   "private": true,
   "nx": {
@@ -10,6 +10,6 @@
     ]
   },
   "devDependencies": {
-    "@org/spotify-mosaic-feature": "*"
+    "@react-mono/spotify-mosaic-feature": "*"
   }
 }

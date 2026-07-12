@@ -1,5 +1,5 @@
 {
-  "name": "@org/spotify-mosaic-feature",
+  "name": "@react-mono/spotify-mosaic-feature",
   "version": "0.0.1",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
@@ -18,10 +18,10 @@
     ]
   },
   "dependencies": {
-    "@org/models": "*",
-    "@org/shared-ui": "*",
-    "@org/spotify-mosaic-data": "*",
-    "@org/spotify-mosaic-ui": "*",
+    "@react-mono/models": "*",
+    "@react-mono/shared-ui": "*",
+    "@react-mono/spotify-mosaic-data": "*",
+    "@react-mono/spotify-mosaic-ui": "*",
     "lucide-react": "*"
   }
 }

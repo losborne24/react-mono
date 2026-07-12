@@ -1,5 +1,5 @@
 {
-  "name": "@org/shared-test-utils",
+  "name": "@react-mono/shared-test-utils",
   "version": "0.0.1",
   "type": "commonjs",
   "main": "./src/index.ts",
@@ -13,7 +13,7 @@
     "./package.json": "./package.json"
   },
   "devDependencies": {
-    "@org/models": "*"
+    "@react-mono/models": "*"
   },
   "nx": {
     "sourceRoot": "libs/shared/test-utils/src",

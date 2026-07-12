@@ -1,4 +1,4 @@
-import { Product } from '@org/models';
+import { Product } from '@react-mono/models';
 
 export const createMockProduct = (overrides?: Partial<Product>): Product => ({
   id: '1',

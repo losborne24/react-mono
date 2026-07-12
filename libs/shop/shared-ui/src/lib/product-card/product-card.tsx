@@ -1,4 +1,4 @@
-import { Product } from '@org/models';
+import { Product } from '@react-mono/models';
 import styles from './product-card.module.css';
 
 interface ProductCardProps {

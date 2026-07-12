@@ -1,4 +1,4 @@
-import { MosaifyApp } from '@org/spotify-mosaic-feature';
+import { MosaifyApp } from '@react-mono/spotify-mosaic-feature';
 
 export function App() {
   return <MosaifyApp />;

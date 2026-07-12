@@ -4,7 +4,7 @@ export default defineConfig({
   root: __dirname,
   cacheDir: '../../node_modules/.vite/apps/api',
   test: {
-    name: '@org/api',
+    name: '@react-mono/api',
     watch: false,
     globals: true,
     environment: 'node',

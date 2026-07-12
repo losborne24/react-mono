@@ -17,13 +17,13 @@ This repository demonstrates a production-ready React monorepo with:
 
 - **7 Libraries**
 
-  - `@org/shop-feature-products` - Product listing feature (React)
-  - `@org/shop-feature-product-detail` - Product detail feature (React)
-  - `@org/shop-data` - Data access layer for shop features
-  - `@org/shop-shared-ui` - Shared UI components
-  - `@org/models` - Shared data models
-  - `@org/api-products` - API product service library
-  - `@org/shared-test-utils` - Shared testing utilities
+  - `@react-mono/shop-feature-products` - Product listing feature (React)
+  - `@react-mono/shop-feature-product-detail` - Product detail feature (React)
+  - `@react-mono/shop-data` - Data access layer for shop features
+  - `@react-mono/shop-shared-ui` - Shared UI components
+  - `@react-mono/models` - Shared data models
+  - `@react-mono/api-products` - API product service library
+  - `@react-mono/shared-test-utils` - Shared testing utilities
 
 - **E2E Testing**
   - `shop-e2e` - Playwright tests for the shop application

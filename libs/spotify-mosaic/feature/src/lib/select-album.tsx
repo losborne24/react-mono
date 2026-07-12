@@ -1,6 +1,6 @@
 import { ChevronRight } from 'lucide-react';
-import type { Album } from '@org/models';
-import { AlbumCard } from '@org/spotify-mosaic-ui';
+import type { Album } from '@react-mono/models';
+import { AlbumCard } from '@react-mono/spotify-mosaic-ui';
 
 export interface SelectAlbumProps {
   albums: Album[];

@@ -1,6 +1,6 @@
 import { ProductsService } from './products.service';
 // eslint-disable-next-line
-import { ProductFilter } from '@org/models';
+import { ProductFilter } from '@react-mono/models';
 
 describe('ProductsService', () => {
   let service: ProductsService;

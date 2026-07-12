@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Product, ProductFilter } from '@org/models';
-import { useProducts, useCategories } from '@org/shop-data';
+import { Product, ProductFilter } from '@react-mono/models';
+import { useProducts, useCategories } from '@react-mono/shop-data';
 import {
   ProductGrid,
   LoadingSpinner,
   ErrorMessage,
-} from '@org/shop-shared-ui';
+} from '@react-mono/shop-shared-ui';
 import styles from './product-list.module.css';
 
 export function ProductList() {

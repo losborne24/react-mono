@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { ProductGrid } from './product-grid';
-import { createMockProductList } from '@org/shared-test-utils';
+import { createMockProductList } from '@react-mono/shared-test-utils';
 
 describe('ProductGrid', () => {
   const mockProducts = createMockProductList(3);

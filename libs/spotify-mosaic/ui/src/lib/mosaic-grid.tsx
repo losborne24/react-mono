@@ -1,4 +1,4 @@
-import type { Album, PickableImage } from '@org/models';
+import type { Album, PickableImage } from '@react-mono/models';
 
 export interface MosaicGridProps {
   image: PickableImage;

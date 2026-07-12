@@ -2,10 +2,10 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { BrowserRouter } from 'react-router-dom';
 import { ProductList } from './product-list';
-import { useProducts, useCategories } from '@org/shop-data';
+import { useProducts, useCategories } from '@react-mono/shop-data';
 
 // Mock the hooks
-vi.mock('@org/shop-data', () => ({
+vi.mock('@react-mono/shop-data', () => ({
   useProducts: vi.fn(),
   useCategories: vi.fn(),
 }));

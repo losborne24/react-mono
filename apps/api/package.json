@@ -1,5 +1,5 @@
 {
-  "name": "@org/api",
+  "name": "@react-mono/api",
   "version": "0.0.1",
   "private": true,
   "nx": {
@@ -85,15 +85,15 @@
           "build"
         ],
         "options": {
-          "buildTarget": "@org/api:build",
+          "buildTarget": "@react-mono/api:build",
           "runBuildTargetDependencies": false
         },
         "configurations": {
           "development": {
-            "buildTarget": "@org/api:build:development"
+            "buildTarget": "@react-mono/api:build:development"
           },
           "production": {
-            "buildTarget": "@org/api:build:production"
+            "buildTarget": "@react-mono/api:build:production"
           }
         }
       },
@@ -124,7 +124,7 @@
   },
   "dependencies": {
     "express": "^4.21.2",
-    "@org/api-products": "*",
-    "@org/models": "*"
+    "@react-mono/api-products": "*",
+    "@react-mono/models": "*"
   }
 }

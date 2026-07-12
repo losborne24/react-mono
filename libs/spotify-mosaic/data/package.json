@@ -1,5 +1,5 @@
 {
-  "name": "@org/spotify-mosaic-data",
+  "name": "@react-mono/spotify-mosaic-data",
   "version": "0.0.1",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
@@ -18,6 +18,6 @@
     ]
   },
   "dependencies": {
-    "@org/models": "*"
+    "@react-mono/models": "*"
   }
 }

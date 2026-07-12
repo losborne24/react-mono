@@ -1,5 +1,5 @@
 {
-  "name": "@org/shop-feature-product-detail",
+  "name": "@react-mono/shop-feature-product-detail",
   "version": "0.0.1",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
@@ -18,7 +18,7 @@
     ]
   },
   "devDependencies": {
-    "@org/shop-data": "*",
-    "@org/shop-shared-ui": "*"
+    "@react-mono/shop-data": "*",
+    "@react-mono/shop-shared-ui": "*"
   }
 }

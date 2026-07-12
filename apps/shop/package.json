@@ -1,5 +1,5 @@
 {
-  "name": "@org/shop",
+  "name": "@react-mono/shop",
   "version": "0.0.1",
   "private": true,
   "nx": {
@@ -7,21 +7,21 @@
     "tags": ["scope:shop"],
     "targets": {
       "serve": {
-        "dependsOn": ["@org/api:serve"]
+        "dependsOn": ["@react-mono/api:serve"]
       },
       "dev": {
-        "dependsOn": ["@org/api:serve"]
+        "dependsOn": ["@react-mono/api:serve"]
       },
       "preview": {
-        "dependsOn": ["build", "@org/api:serve"]
+        "dependsOn": ["build", "@react-mono/api:serve"]
       }
     }
   },
   "devDependencies": {
-    "@org/models": "*",
-    "@org/shop-data": "*",
-    "@org/shop-feature-product-detail": "*",
-    "@org/shop-feature-products": "*",
-    "@org/shop-shared-ui": "*"
+    "@react-mono/models": "*",
+    "@react-mono/shop-data": "*",
+    "@react-mono/shop-feature-product-detail": "*",
+    "@react-mono/shop-feature-products": "*",
+    "@react-mono/shop-shared-ui": "*"
   }
 }

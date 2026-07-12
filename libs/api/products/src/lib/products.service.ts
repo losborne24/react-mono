@@ -1,5 +1,5 @@
 // eslint-disable-next-line
-import { Product, ProductFilter } from '@org/models';
+import { Product, ProductFilter } from '@react-mono/models';
 
 export class ProductsService {
   private products: Product[] = [

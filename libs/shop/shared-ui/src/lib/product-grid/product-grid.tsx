@@ -1,4 +1,4 @@
-import { Product } from '@org/models';
+import { Product } from '@react-mono/models';
 import { ProductCard } from '../product-card/product-card';
 import styles from './product-grid.module.css';
 

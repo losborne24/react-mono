@@ -4,9 +4,9 @@
     {
       "type": "node",
       "request": "launch",
-      "name": "Debug @org/api with Nx",
+      "name": "Debug @react-mono/api with Nx",
       "runtimeExecutable": "npx",
-      "runtimeArgs": ["nx", "serve", "@org/api"],
+      "runtimeArgs": ["nx", "serve", "@react-mono/api"],
       "env": {
         "NODE_OPTIONS": "--inspect=9229"
       },

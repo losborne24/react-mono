@@ -1,6 +1,6 @@
 import { Download, Share2, RefreshCw } from 'lucide-react';
-import type { Album, PickableImage } from '@org/models';
-import { MosaicGrid } from '@org/spotify-mosaic-ui';
+import type { Album, PickableImage } from '@react-mono/models';
+import { MosaicGrid } from '@react-mono/spotify-mosaic-ui';
 
 const COLS = 22;
 const ROWS = 16;

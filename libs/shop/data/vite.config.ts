@@ -10,7 +10,7 @@ export default defineConfig(() => ({
   //  plugins: [ nxViteTsPaths() ],
   // },
   test: {
-    name: '@org/data',
+    name: '@react-mono/data',
     watch: false,
     globals: true,
     environment: 'jsdom',

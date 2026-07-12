@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Product, ApiResponse } from '@org/models';
+import { Product, ApiResponse } from '@react-mono/models';
 
 const API_URL = 'http://localhost:3333/api';
 

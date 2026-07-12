@@ -9,7 +9,7 @@ export default defineConfig(() => ({
   //  plugins: [],
   // },
   test: {
-    name: '@org/spotify-mosaic-ui',
+    name: '@react-mono/spotify-mosaic-ui',
     watch: false,
     globals: true,
     environment: 'jsdom',

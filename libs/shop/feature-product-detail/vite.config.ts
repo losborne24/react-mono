@@ -10,7 +10,7 @@ export default defineConfig(() => ({
   //  plugins: [ nxViteTsPaths() ],
   // },
   test: {
-    name: '@org/feature-product-detail',
+    name: '@react-mono/feature-product-detail',
     watch: false,
     globals: true,
     environment: 'jsdom',

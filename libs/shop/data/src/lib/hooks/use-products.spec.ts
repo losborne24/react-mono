@@ -1,7 +1,7 @@
 import { renderHook, waitFor } from '@testing-library/react';
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { useProducts } from './use-products';
-import {ProductFilter} from "@org/models";
+import {ProductFilter} from "@react-mono/models";
 
 // Mock fetch
 global.fetch = vi.fn();

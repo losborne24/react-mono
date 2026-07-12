@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { Upload, Check, ChevronRight } from 'lucide-react';
-import type { PickableImage } from '@org/models';
-import { Loading } from '@org/shared-ui';
+import type { PickableImage } from '@react-mono/models';
+import { Loading } from '@react-mono/shared-ui';
 
 export interface SelectImageProps {
   images: PickableImage[];

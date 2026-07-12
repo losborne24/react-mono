@@ -1,5 +1,5 @@
 {
-  "name": "@org/shop-data",
+  "name": "@react-mono/shop-data",
   "version": "0.0.1",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
@@ -18,6 +18,6 @@
     ]
   },
   "devDependencies": {
-    "@org/models": "*"
+    "@react-mono/models": "*"
   }
 }

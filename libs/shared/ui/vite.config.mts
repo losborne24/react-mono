@@ -9,7 +9,7 @@ export default defineConfig(() => ({
   //  plugins: [],
   // },
   test: {
-    name: '@org/shared-ui',
+    name: '@react-mono/shared-ui',
     watch: false,
     globals: true,
     environment: 'jsdom',

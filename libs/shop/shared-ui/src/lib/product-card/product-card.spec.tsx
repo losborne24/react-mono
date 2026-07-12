@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { ProductCard } from './product-card';
-import { createMockProduct } from '@org/shared-test-utils';
+import { createMockProduct } from '@react-mono/shared-test-utils';
 
 describe('ProductCard', () => {
   const mockProduct = createMockProduct();

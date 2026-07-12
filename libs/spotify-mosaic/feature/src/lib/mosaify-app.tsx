@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Layers } from 'lucide-react';
-import type { Album, PickableImage } from '@org/models';
-import { ALBUMS, SAMPLE_IMAGES } from '@org/spotify-mosaic-data';
-import { StepIndicator } from '@org/spotify-mosaic-ui';
+import type { Album, PickableImage } from '@react-mono/models';
+import { ALBUMS, SAMPLE_IMAGES } from '@react-mono/spotify-mosaic-data';
+import { StepIndicator } from '@react-mono/spotify-mosaic-ui';
 import { ConnectToSpotify } from './connect-to-spotify';
 import { SelectAlbum } from './select-album';
 import { SelectImage } from './select-image';

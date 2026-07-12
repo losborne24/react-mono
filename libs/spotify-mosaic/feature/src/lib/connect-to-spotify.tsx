@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Layers } from 'lucide-react';
-import { SpotifyLogo } from '@org/spotify-mosaic-ui';
-import { Loading } from '@org/shared-ui';
+import { SpotifyLogo } from '@react-mono/spotify-mosaic-ui';
+import { Loading } from '@react-mono/shared-ui';
 
 export interface ConnectToSpotifyProps {
   onConnect: () => void;

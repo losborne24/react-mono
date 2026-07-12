@@ -10,7 +10,7 @@ export default defineConfig(() => ({
   //  plugins: [ nxViteTsPaths() ],
   // },
   test: {
-    name: '@org/shared-ui',
+    name: '@react-mono/shared-ui',
     watch: false,
     globals: true,
     environment: 'jsdom',

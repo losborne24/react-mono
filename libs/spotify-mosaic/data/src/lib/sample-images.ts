@@ -1,4 +1,4 @@
-import type { PickableImage } from '@org/models';
+import type { PickableImage } from '@react-mono/models';
 
 export const SAMPLE_IMAGES: PickableImage[] = [
   {

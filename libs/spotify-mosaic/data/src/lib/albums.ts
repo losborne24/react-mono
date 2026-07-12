@@ -1,4 +1,4 @@
-import type { Album } from '@org/models';
+import type { Album } from '@react-mono/models';
 
 export const ALBUMS: Album[] = [
   {

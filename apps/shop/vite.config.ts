@@ -28,7 +28,7 @@ export default defineConfig(() => ({
     },
   },
   test: {
-    name: '@org/shop',
+    name: '@react-mono/shop',
     watch: false,
     globals: true,
     environment: 'jsdom',

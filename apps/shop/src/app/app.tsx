@@ -1,11 +1,11 @@
 import { lazy, Suspense } from 'react';
 import { Route, Routes, Navigate } from 'react-router-dom';
-import { LoadingSpinner } from '@org/shop-shared-ui';
+import { LoadingSpinner } from '@react-mono/shop-shared-ui';
 import './app.css';
 
 // Lazy load feature components
-const ProductList = lazy(() => import('@org/shop-feature-products').then(m => ({ default: m.ProductList })));
-const ProductDetail = lazy(() => import('@org/shop-feature-product-detail').then(m => ({ default: m.ProductDetail })));
+const ProductList = lazy(() => import('@react-mono/shop-feature-products').then(m => ({ default: m.ProductList })));
+const ProductDetail = lazy(() => import('@react-mono/shop-feature-product-detail').then(m => ({ default: m.ProductDetail })));
 
 export function App() {
   return (
