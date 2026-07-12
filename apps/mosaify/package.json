@@ -4,8 +4,12 @@
   "private": true,
   "nx": {
     "name": "mosaify",
+    "projectType": "application",
     "tags": [
       "scope:mosaify"
     ]
+  },
+  "devDependencies": {
+    "@org/spotify-mosaic-feature": "*"
   }
 }

@@ -1,0 +1,68 @@
+import type { Album } from '@org/models';
+
+export const ALBUMS: Album[] = [
+  {
+    id: '1',
+    title: 'After Hours',
+    artist: 'The Weeknd',
+    year: 2020,
+    tracks: 14,
+    img: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=400&fit=crop&auto=format',
+  },
+  {
+    id: '2',
+    title: 'Blonde',
+    artist: 'Frank Ocean',
+    year: 2016,
+    tracks: 17,
+    img: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&h=400&fit=crop&auto=format',
+  },
+  {
+    id: '3',
+    title: 'Random Access Memories',
+    artist: 'Daft Punk',
+    year: 2013,
+    tracks: 13,
+    img: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=400&h=400&fit=crop&auto=format',
+  },
+  {
+    id: '4',
+    title: 'To Pimp a Butterfly',
+    artist: 'Kendrick Lamar',
+    year: 2015,
+    tracks: 16,
+    img: 'https://images.unsplash.com/photo-1504898770365-14faca6a7320?w=400&h=400&fit=crop&auto=format',
+  },
+  {
+    id: '5',
+    title: 'Discovery',
+    artist: 'Daft Punk',
+    year: 2001,
+    tracks: 14,
+    img: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400&h=400&fit=crop&auto=format',
+  },
+  {
+    id: '6',
+    title: 'Currents',
+    artist: 'Tame Impala',
+    year: 2015,
+    tracks: 13,
+    img: 'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=400&h=400&fit=crop&auto=format',
+  },
+  {
+    id: '7',
+    title: 'Melodrama',
+    artist: 'Lorde',
+    year: 2017,
+    tracks: 11,
+    img: 'https://images.unsplash.com/photo-1501612780327-45045538702b?w=400&h=400&fit=crop&auto=format',
+  },
+  {
+    id: '8',
+    title: 'In Rainbows',
+    artist: 'Radiohead',
+    year: 2007,
+    tracks: 10,
+    img: 'https://images.unsplash.com/photo-1446057032654-9d8885db76c6?w=400&h=400&fit=crop&auto=format',
+  },
+];

@@ -38,6 +38,18 @@
     },
     {
       "path": "./apps/mosaify"
+    },
+    {
+      "path": "./libs/spotify-mosaic/feature"
+    },
+    {
+      "path": "./libs/spotify-mosaic/ui"
+    },
+    {
+      "path": "./libs/spotify-mosaic/data"
+    },
+    {
+      "path": "./libs/shared/ui"
     }
   ]
 }

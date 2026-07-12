@@ -1,1 +1,90 @@
-/* You can add global styles to this file, and also import other style files */
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300;12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap');
+
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+/* Scan workspace libraries consumed by this app for Tailwind classes */
+@source '../../../libs/spotify-mosaic';
+@source '../../../libs/shared/ui';
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --font-size: 16px;
+  --background: #0b0b0e;
+  --foreground: #ededf0;
+  --card: #141418;
+  --card-foreground: #ededf0;
+  --popover: #141418;
+  --popover-foreground: #ededf0;
+  --primary: #1db954;
+  --primary-foreground: #000000;
+  --secondary: #1e1e24;
+  --secondary-foreground: #ededf0;
+  --muted: #1e1e24;
+  --muted-foreground: #6b6b7a;
+  --accent: #1db954;
+  --accent-foreground: #000000;
+  --destructive: #e0284a;
+  --destructive-foreground: #ffffff;
+  --border: rgba(255, 255, 255, 0.07);
+  --input: transparent;
+  --input-background: #1e1e24;
+  --switch-background: #2e2e38;
+  --font-weight-medium: 500;
+  --font-weight-normal: 400;
+  --ring: #1db954;
+  --chart-1: #1db954;
+  --chart-2: #1ed760;
+  --chart-3: #148a3e;
+  --chart-4: #0d6630;
+  --chart-5: #065520;
+  --radius: 0.75rem;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-input-background: var(--input-background);
+  --color-switch-background: var(--switch-background);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html {
+    font-size: var(--font-size);
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}

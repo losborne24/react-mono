@@ -1,11 +1,7 @@
-import './app.css';
-import NxWelcome from './nx-welcome';
+import { MosaifyApp } from '@org/spotify-mosaic-feature';
 
 export function App() {
-  return (
-    <div>
-      <NxWelcome title="mosaify" />
-    </div>
-  );
+  return <MosaifyApp />;
 }
+
 export default App;
