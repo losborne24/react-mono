@@ -21,3 +21,5 @@
 - The `nx-generate` skill handles generator discovery internally - don't call nx_docs just to look up generator syntax
 
 <!-- nx configuration end-->
+
+Project conventions (Nx boundaries, component architecture, Figma workflow, styling, testing): see @design-system.md
