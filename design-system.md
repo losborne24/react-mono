@@ -261,6 +261,30 @@ over:
 DashboardPage.tsx (1000+ lines)
 ```
 
+## Render Readability
+
+Keep the JSX returned from a component flat and scannable.
+
+* No nested ternaries in JSX. Lift branching into a variable, helper, or subcomponent.
+* No multi-line function bodies inside a `return` (e.g. `.map()` with logic + nested markup). Extract a named subcomponent and pass props.
+
+Prefer:
+
+```tsx
+{steps.map((step, i) => (
+  <StepNode key={step.label + i} label={step.label} isDone={...} />
+))}
+```
+
+over:
+
+```tsx
+{steps.map((step, i) => {
+  const isDone = ...;
+  return <div>{isDone ? <A /> : isCurrent ? <B /> : <C />}</div>;
+})}
+```
+
 ---
 
 # State Management
