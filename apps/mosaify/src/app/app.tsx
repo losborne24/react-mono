@@ -24,7 +24,7 @@ export function App() {
   };
 
   const handleGenerate = () => {
-    if (!selectedImage) advance(3);
+    if (selectedImage) advance(3);
   };
 
   const handleReset = () => {
