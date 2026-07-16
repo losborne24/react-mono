@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Upload, Check, ChevronRight } from 'lucide-react';
+import { IconUpload, IconCheck, IconChevronRight } from '@tabler/icons-react';
 import type { SourceImage } from '@react-mono/models';
 
 export interface SelectImageProps {
@@ -47,7 +47,7 @@ export function SelectImage({
           background: dragging ? 'rgba(29,185,84,0.05)' : 'transparent',
         }}
       >
-        <Upload size={16} className="text-muted-foreground" />
+        <IconUpload size={16} className="text-muted-foreground" />
         <span className="text-sm text-muted-foreground">
           Drop an image or{' '}
           <span className="text-primary underline underline-offset-2">
@@ -82,7 +82,7 @@ export function SelectImage({
               {isSelected && (
                 <div className="absolute inset-0 bg-primary/25 flex items-end justify-start p-1.5">
                   <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
-                    <Check size={11} className="text-black" strokeWidth={3} />
+                    <IconCheck size={11} className="text-black" stroke={3} />
                   </div>
                 </div>
               )}
@@ -112,7 +112,7 @@ export function SelectImage({
           style={{ background: '#1db954', color: '#000' }}
         >
           Generate Mosaic
-          <ChevronRight size={16} />
+          <IconChevronRight size={16} />
         </button>
       </div>
     </div>

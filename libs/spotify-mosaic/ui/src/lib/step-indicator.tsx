@@ -1,4 +1,4 @@
-import { Check } from 'lucide-react';
+import { IconCheck } from '@tabler/icons-react';
 
 export interface Step {
   n: number;
@@ -36,7 +36,7 @@ export function StepIndicator({ current, steps = STEPS }: StepIndicatorProps) {
                     : 'bg-muted text-muted-foreground border border-border',
                 ].join(' ')}
               >
-                {isDone ? <Check size={14} strokeWidth={2.5} /> : step.n}
+                {isDone ? <IconCheck size={14} stroke={2.5} /> : step.n}
               </div>
               <span
                 className={[

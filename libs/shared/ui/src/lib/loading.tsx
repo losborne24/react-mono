@@ -1,4 +1,4 @@
-import { Loader2 } from 'lucide-react';
+import { IconLoader2 } from '@tabler/icons-react';
 
 export interface LoadingProps {
   label?: string;
@@ -15,7 +15,7 @@ export function Loading({ label, size = 18, className }: LoadingProps) {
         .filter(Boolean)
         .join(' ')}
     >
-      <Loader2 size={size} className="animate-spin" />
+      <IconLoader2 size={size} className="animate-spin" />
       {label && <span className="text-sm">{label}</span>}
     </span>
   );

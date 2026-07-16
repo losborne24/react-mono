@@ -1,4 +1,4 @@
-import { Check } from 'lucide-react';
+import { IconCheck } from '@tabler/icons-react';
 import type { Playlist } from '@react-mono/models';
 
 export interface PlaylistCardProps {
@@ -27,7 +27,7 @@ export function PlaylistCard({ playlist, selected, onSelect }: PlaylistCardProps
         {selected && (
           <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
             <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center shadow-lg">
-              <Check size={14} className="text-black" strokeWidth={2.5} />
+              <IconCheck size={14} className="text-black" stroke={2.5} />
             </div>
           </div>
         )}

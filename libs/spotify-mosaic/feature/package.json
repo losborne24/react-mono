@@ -22,6 +22,6 @@
     "@react-mono/shared-ui": "*",
     "@react-mono/spotify-mosaic-data": "*",
     "@react-mono/spotify-mosaic-ui": "*",
-    "lucide-react": "*"
+    "@tabler/icons-react": "*"
   }
 }

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Layers } from 'lucide-react';
+import { IconStack2 } from '@tabler/icons-react';
 import { SpotifyLogo } from '@react-mono/spotify-mosaic-ui';
 import { Loading } from '@react-mono/shared-ui';
 
@@ -40,7 +40,7 @@ export function ConnectToSpotify({ onConnect }: ConnectToSpotifyProps) {
             </div>
           </div>
           <div className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-primary flex items-center justify-center">
-            <Layers size={12} className="text-black" />
+            <IconStack2 size={12} className="text-black" />
           </div>
         </div>
 

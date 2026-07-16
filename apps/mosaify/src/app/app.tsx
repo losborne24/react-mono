@@ -1,4 +1,4 @@
-import { Layers } from 'lucide-react';
+import { IconStack2 } from '@tabler/icons-react';
 import { WizardLayout } from '@react-mono/spotify-mosaic-ui';
 import {
   ConnectToSpotify,
@@ -12,7 +12,7 @@ function Brand() {
   return (
     <div className="flex items-center gap-2.5">
       <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
-        <Layers size={14} className="text-black" />
+        <IconStack2 size={14} className="text-black" />
       </div>
       <span className="font-display font-bold text-sm tracking-tight text-foreground">
         Mosaify
@@ -44,37 +44,50 @@ export function App() {
   } = useMosaifyWizard();
 
   return (
-    <WizardLayout
-      brand={<Brand />}
-      headerAction={view.step !== 'connect' ? <ConnectedBadge /> : undefined}
-      stepNumber={stepNumber}
-    >
-      {view.step === 'connect' && <ConnectToSpotify onConnect={connect} />}
-      {view.step === 'playlist' && (
-        <SelectPlaylist
-          playlists={view.playlists}
-          selected={view.selected}
-          onSelect={selectPlaylist}
-          onNext={confirmPlaylist}
-        />
-      )}
-      {view.step === 'image' && (
-        <SelectImage
-          images={view.images}
-          selected={view.selected}
-          onSelect={selectImage}
-          onGenerate={confirmImage}
-        />
-      )}
-      {view.step === 'mosaic' && (
-        <Mosaic
-          image={view.image}
-          playlist={view.playlist}
-          playlists={playlists}
-          onReset={reset}
-        />
-      )}
-    </WizardLayout>
+    <div className="min-h-screen bg-background text-foreground font-sans flex flex-col relative overflow-hidden">
+      {/* Background texture */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          backgroundImage:
+            'radial-gradient(ellipse 80% 50% at 50% -10%, rgba(29,185,84,0.07) 0%, transparent 60%)',
+        }}
+      />
+
+      {/* Header */}
+      <header className="relative z-10 flex items-center justify-between px-6 pt-6 pb-0">
+        <Brand />
+        {view.step !== 'connect' && <ConnectedBadge />}
+      </header>
+
+      <WizardLayout stepNumber={stepNumber}>
+        {view.step === 'connect' && <ConnectToSpotify onConnect={connect} />}
+        {view.step === 'playlist' && (
+          <SelectPlaylist
+            playlists={view.playlists}
+            selected={view.selected}
+            onSelect={selectPlaylist}
+            onNext={confirmPlaylist}
+          />
+        )}
+        {view.step === 'image' && (
+          <SelectImage
+            images={view.images}
+            selected={view.selected}
+            onSelect={selectImage}
+            onGenerate={confirmImage}
+          />
+        )}
+        {view.step === 'mosaic' && (
+          <Mosaic
+            image={view.image}
+            playlist={view.playlist}
+            playlists={playlists}
+            onReset={reset}
+          />
+        )}
+      </WizardLayout>
+    </div>
   );
 }
 

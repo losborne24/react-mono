@@ -18,6 +18,6 @@
     ]
   },
   "dependencies": {
-    "lucide-react": "*"
+    "@tabler/icons-react": "*"
   }
 }

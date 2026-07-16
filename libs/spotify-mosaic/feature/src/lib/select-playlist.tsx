@@ -1,4 +1,4 @@
-import { ChevronRight } from 'lucide-react';
+import { IconChevronRight } from '@tabler/icons-react';
 import type { Playlist } from '@react-mono/models';
 import { PlaylistCard } from '@react-mono/spotify-mosaic-ui';
 
@@ -54,7 +54,7 @@ export function SelectPlaylist({
           style={{ background: '#1db954', color: '#000' }}
         >
           Next
-          <ChevronRight size={16} />
+          <IconChevronRight size={16} />
         </button>
       </div>
     </div>

@@ -19,6 +19,6 @@
   },
   "dependencies": {
     "@react-mono/models": "*",
-    "lucide-react": "*"
+    "@tabler/icons-react": "*"
   }
 }

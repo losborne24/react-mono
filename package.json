@@ -5,9 +5,9 @@
   "scripts": {},
   "private": true,
   "dependencies": {
+    "@tabler/icons-react": "^3.44.0",
     "@tanstack/react-query": "^5.101.2",
     "express": "^4.21.2",
-    "lucide-react": "^0.487.0",
     "next": "^16.2.10",
     "react": "19.0.0",
     "react-dom": "19.0.0",
