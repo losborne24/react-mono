@@ -1,12 +1,15 @@
 import { IconChevronRight } from '@tabler/icons-react';
 import type { Playlist } from '@react-mono/models';
 import { PlaylistCard } from '@react-mono/spotify-mosaic-ui';
+import { Loading } from '@react-mono/shared-ui';
 
 export interface SelectPlaylistProps {
   playlists: Playlist[];
   selected: Playlist | null;
   onSelect: (playlist: Playlist) => void;
   onNext: () => void;
+  /** True while playlists are being fetched from Spotify. */
+  loading?: boolean;
 }
 
 export function SelectPlaylist({
@@ -14,6 +17,7 @@ export function SelectPlaylist({
   selected,
   onSelect,
   onNext,
+  loading = false,
 }: SelectPlaylistProps) {
   return (
     <div className="flex flex-col flex-1 px-6 pb-12 max-w-3xl mx-auto w-full">
@@ -27,16 +31,28 @@ export function SelectPlaylist({
       </div>
 
       {/* Playlist grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mb-8">
-        {playlists.map((playlist) => (
-          <PlaylistCard
-            key={playlist.id}
-            playlist={playlist}
-            selected={selected?.id === playlist.id}
-            onSelect={onSelect}
-          />
-        ))}
-      </div>
+      {loading ? (
+        <div className="flex items-center justify-center flex-1 py-16">
+          <Loading label="Loading your playlists…" size={20} />
+        </div>
+      ) : playlists.length === 0 ? (
+        <div className="flex items-center justify-center flex-1 py-16">
+          <p className="text-sm text-muted-foreground">
+            No playlists found on your account.
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mb-8">
+          {playlists.map((playlist) => (
+            <PlaylistCard
+              key={playlist.id}
+              playlist={playlist}
+              selected={selected?.id === playlist.id}
+              onSelect={onSelect}
+            />
+          ))}
+        </div>
+      )}
 
       <div className="flex items-center justify-between mt-auto">
         {selected ? (

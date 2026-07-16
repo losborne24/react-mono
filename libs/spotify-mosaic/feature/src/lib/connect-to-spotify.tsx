@@ -1,19 +1,24 @@
-import { useState } from 'react';
-import { IconStack2 } from '@tabler/icons-react';
+import { IconLayoutCollage, IconAlertTriangle } from '@tabler/icons-react';
 import { SpotifyLogo } from '@react-mono/spotify-mosaic-ui';
 import { Loading } from '@react-mono/shared-ui';
+import type { AuthStatus } from './use-mosaify-wizard';
 
 export interface ConnectToSpotifyProps {
   onConnect: () => void;
+  /** Auth lifecycle; drives the button/spinner state. */
+  status?: AuthStatus;
+  /** False when VITE_SPOTIFY_CLIENT_ID is missing — login can't proceed. */
+  configured?: boolean;
+  error?: string | null;
 }
 
-export function ConnectToSpotify({ onConnect }: ConnectToSpotifyProps) {
-  const [loading, setLoading] = useState(false);
-
-  const handleClick = () => {
-    setLoading(true);
-    setTimeout(onConnect, 1200);
-  };
+export function ConnectToSpotify({
+  onConnect,
+  status = 'unauthenticated',
+  configured = true,
+  error = null,
+}: ConnectToSpotifyProps) {
+  const checking = status === 'checking';
 
   return (
     <div
@@ -40,7 +45,7 @@ export function ConnectToSpotify({ onConnect }: ConnectToSpotifyProps) {
             </div>
           </div>
           <div className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-primary flex items-center justify-center">
-            <IconStack2 size={12} className="text-black" />
+            <IconLayoutCollage size={12} className="text-black" />
           </div>
         </div>
 
@@ -54,17 +59,29 @@ export function ConnectToSpotify({ onConnect }: ConnectToSpotifyProps) {
           </p>
         </div>
 
+        {!configured && (
+          <div className="flex items-start gap-2 max-w-sm text-left rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-foreground">
+            <IconAlertTriangle size={16} className="text-destructive mt-0.5 shrink-0" />
+            <span>
+              Spotify isn&apos;t configured. Set{' '}
+              <code className="text-primary">VITE_SPOTIFY_CLIENT_ID</code> in{' '}
+              <code>.env.local</code> and restart the dev server.
+            </span>
+          </div>
+        )}
+
+        {error && (
+          <p className="text-sm text-destructive max-w-sm">{error}</p>
+        )}
+
         <button
-          onClick={handleClick}
-          disabled={loading}
-          className="flex items-center gap-3 px-8 py-4 rounded-xl font-semibold text-base transition-all duration-200 disabled:opacity-70"
-          style={{
-            background: loading ? 'rgba(29,185,84,0.6)' : '#1db954',
-            color: '#000',
-          }}
+          onClick={onConnect}
+          disabled={checking || !configured}
+          className="flex items-center gap-3 px-8 py-4 rounded-xl font-semibold text-base transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
+          style={{ background: '#1db954', color: '#000' }}
         >
-          {loading ? (
-            <Loading label="Connecting…" size={18} className="text-black" />
+          {checking ? (
+            <Loading label="Checking session…" size={18} className="text-black" />
           ) : (
             <>
               <SpotifyLogo size={20} />
@@ -74,7 +91,7 @@ export function ConnectToSpotify({ onConnect }: ConnectToSpotifyProps) {
         </button>
 
         <p className="text-xs text-muted-foreground max-w-xs">
-          We only read your saved albums and liked songs — we never post on your
+          We only read your playlists and profile name — we never post on your
           behalf.
         </p>
       </div>

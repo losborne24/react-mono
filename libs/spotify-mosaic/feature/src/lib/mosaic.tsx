@@ -8,16 +8,18 @@ const ROWS = 16;
 export interface MosaicProps {
   image: SourceImage;
   playlist: Playlist;
-  playlists: Playlist[];
+  /** Album artwork used as mosaic tiles. Falls back to the playlist cover. */
+  tiles: SourceImage[];
   onReset: () => void;
 }
 
-export function Mosaic({ image, playlist, playlists, onReset }: MosaicProps) {
+export function Mosaic({ image, playlist, tiles, onReset }: MosaicProps) {
   const total = COLS * ROWS;
+  const tileUrls = tiles.length ? tiles.map((t) => t.url) : [playlist.img];
 
   const stats = [
     { label: 'Tiles', value: `${total.toLocaleString()}` },
-    { label: 'Unique artworks', value: `${playlists.length}` },
+    { label: 'Unique artworks', value: `${tileUrls.length}` },
     { label: 'Resolution', value: `${COLS * 30}×${ROWS * 30}px` },
     { label: 'Playlist', value: playlist.artist },
   ];
@@ -36,7 +38,7 @@ export function Mosaic({ image, playlist, playlists, onReset }: MosaicProps) {
 
       {/* Mosaic */}
       <div className="flex justify-center mb-6">
-        <MosaicGrid image={image} playlists={playlists} cols={COLS} rows={ROWS} />
+        <MosaicGrid image={image} tileUrls={tileUrls} cols={COLS} rows={ROWS} />
       </div>
 
       {/* Stats strip */}

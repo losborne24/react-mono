@@ -2,7 +2,8 @@ export interface Playlist {
   id: string;
   title: string;
   artist: string;
-  year: number;
+  /** Release year — only present for the bundled mock albums, not live playlists. */
+  year?: number;
   tracks: number;
   img: string;
 }

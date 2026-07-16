@@ -40,7 +40,8 @@ export function PlaylistCard({ playlist, selected, onSelect }: PlaylistCardProps
           {playlist.artist}
         </p>
         <p className="text-[10px] text-muted-foreground/60 mt-0.5">
-          {playlist.year} · {playlist.tracks} tracks
+          {playlist.year ? `${playlist.year} · ` : ''}
+          {playlist.tracks} tracks
         </p>
       </div>
     </button>

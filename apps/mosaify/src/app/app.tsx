@@ -1,4 +1,4 @@
-import { IconStack2 } from '@tabler/icons-react';
+import { IconLayoutCollage } from '@tabler/icons-react';
 import { WizardLayout } from '@react-mono/spotify-mosaic-ui';
 import {
   ConnectToSpotify,
@@ -12,7 +12,7 @@ function Brand() {
   return (
     <div className="flex items-center gap-2.5">
       <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
-        <IconStack2 size={14} className="text-black" />
+        <IconLayoutCollage size={14} className="text-black" />
       </div>
       <span className="font-display font-bold text-sm tracking-tight text-foreground">
         Mosaify
@@ -21,11 +21,11 @@ function Brand() {
   );
 }
 
-function ConnectedBadge() {
+function ConnectedBadge({ name }: { name: string }) {
   return (
     <div className="flex items-center gap-2 text-xs text-muted-foreground">
       <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-      Connected as Alex Chen
+      Connected as {name}
     </div>
   );
 }
@@ -34,7 +34,7 @@ export function App() {
   const {
     view,
     stepNumber,
-    playlists,
+    profile,
     selectPlaylist,
     selectImage,
     connect,
@@ -57,15 +57,23 @@ export function App() {
       {/* Header */}
       <header className="relative z-10 flex items-center justify-between px-6 pt-6 pb-0">
         <Brand />
-        {view.step !== 'connect' && <ConnectedBadge />}
+        {profile && <ConnectedBadge name={profile.name} />}
       </header>
 
       <WizardLayout stepNumber={stepNumber}>
-        {view.step === 'connect' && <ConnectToSpotify onConnect={connect} />}
+        {view.step === 'connect' && (
+          <ConnectToSpotify
+            onConnect={connect}
+            status={view.status}
+            configured={view.configured}
+            error={view.error}
+          />
+        )}
         {view.step === 'playlist' && (
           <SelectPlaylist
             playlists={view.playlists}
             selected={view.selected}
+            loading={view.loading}
             onSelect={selectPlaylist}
             onNext={confirmPlaylist}
           />
@@ -82,7 +90,7 @@ export function App() {
           <Mosaic
             image={view.image}
             playlist={view.playlist}
-            playlists={playlists}
+            tiles={view.tiles}
             onReset={reset}
           />
         )}

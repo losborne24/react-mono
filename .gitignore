@@ -47,6 +47,11 @@ vite.config.*.timestamp*
 vitest.config.*.timestamp*
 test-output
 
+# Local env files — never commit secrets/local config
+.env
+.env.local
+.env.*.local
+
 .claude/worktrees
 .claude/settings.local.json
 .nx/polygraph

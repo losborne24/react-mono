@@ -1,25 +1,27 @@
-import type { Playlist, SourceImage } from '@react-mono/models';
+import type { SourceImage } from '@react-mono/models';
 
 export interface MosaicGridProps {
   image: SourceImage;
-  playlists: Playlist[];
+  /** Artwork URLs used as mosaic tiles (album art or playlist covers). */
+  tileUrls: string[];
   cols?: number;
   rows?: number;
 }
 
-// Playlist arts tiled with the target image blended over for color fidelity.
+// Artwork tiled with the target image blended over for color fidelity.
 export function MosaicGrid({
   image,
-  playlists,
+  tileUrls,
   cols = 22,
   rows = 16,
 }: MosaicGridProps) {
   const total = cols * rows;
+  const source = tileUrls.length ? tileUrls : [''];
 
   const tiles = Array.from({ length: total }, (_, i) => {
     // Deterministic but varied distribution
-    const spread = (i * 11 + Math.floor(i / cols) * 7 + (i % 3) * 3) % playlists.length;
-    return playlists[spread];
+    const spread = (i * 11 + Math.floor(i / cols) * 7 + (i % 3) * 3) % source.length;
+    return source[spread];
   });
 
   return (
@@ -32,14 +34,16 @@ export function MosaicGrid({
         className="absolute inset-0 grid"
         style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}
       >
-        {tiles.map((playlist, i) => (
+        {tiles.map((url, i) => (
           <div key={i} className="overflow-hidden bg-muted">
-            <img
-              src={playlist.img}
-              alt=""
-              className="w-full h-full object-cover"
-              loading="lazy"
-            />
+            {url && (
+              <img
+                src={url}
+                alt=""
+                className="w-full h-full object-cover"
+                loading="lazy"
+              />
+            )}
           </div>
         ))}
       </div>

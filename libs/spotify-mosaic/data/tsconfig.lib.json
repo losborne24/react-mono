@@ -2,8 +2,10 @@
   "extends": "../../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "dist",
+    "lib": ["es2022", "dom"],
     "types": [
       "node",
+      "vite/client",
       "@nx/react/typings/cssmodule.d.ts",
       "@nx/react/typings/image.d.ts"
     ],
