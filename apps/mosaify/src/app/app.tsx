@@ -1,6 +1,4 @@
-import { useState } from 'react';
 import { Layers } from 'lucide-react';
-import type { Playlist, SourceImage } from '@react-mono/models';
 import { PLAYLISTS, SAMPLE_IMAGES } from '@react-mono/spotify-mosaic-data';
 import { StepIndicator } from '@react-mono/spotify-mosaic-ui';
 import {
@@ -8,30 +6,22 @@ import {
   SelectPlaylist,
   SelectImage,
   Mosaic,
+  useMosaifyWizard,
 } from '@react-mono/spotify-mosaic-feature';
 
 export function App() {
-  const [step, setStep] = useState(1);
-  const [selectedPlaylist, setSelectedPlaylist] = useState<Playlist | null>(null);
-  const [selectedImage, setSelectedImage] = useState<SourceImage | null>(null);
-
-  const advance = () => setStep((s) => s + 1);
-
-  const handleConnect = () => advance();
-
-  const handlePlaylistNext = () => {
-    if (selectedPlaylist) advance();
-  };
-
-  const handleGenerate = () => {
-    if (selectedImage) advance();
-  };
-
-  const handleReset = () => {
-    setStep(1);
-    setSelectedPlaylist(null);
-    setSelectedImage(null);
-  };
+  const {
+    step,
+    stepNumber,
+    selectedPlaylist,
+    selectedImage,
+    selectPlaylist,
+    selectImage,
+    connect,
+    confirmPlaylist,
+    confirmImage,
+    reset,
+  } = useMosaifyWizard();
 
   return (
     <div
@@ -60,7 +50,7 @@ export function App() {
             Mosaify
           </span>
         </div>
-        {step > 1 && (
+        {step !== 'connect' && (
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
             Connected as Alex Chen
@@ -70,34 +60,34 @@ export function App() {
 
       {/* Step indicator */}
       <div className="relative z-10">
-        <StepIndicator current={step} />
+        <StepIndicator current={stepNumber} />
       </div>
 
       {/* Step content */}
       <main className="relative z-10 flex flex-col flex-1">
-        {step === 1 && <ConnectToSpotify onConnect={handleConnect} />}
-        {step === 2 && (
+        {step === 'connect' && <ConnectToSpotify onConnect={connect} />}
+        {step === 'playlist' && (
           <SelectPlaylist
             playlists={PLAYLISTS}
             selected={selectedPlaylist}
-            onSelect={setSelectedPlaylist}
-            onNext={handlePlaylistNext}
+            onSelect={selectPlaylist}
+            onNext={confirmPlaylist}
           />
         )}
-        {step === 3 && (
+        {step === 'image' && (
           <SelectImage
             images={SAMPLE_IMAGES}
             selected={selectedImage}
-            onSelect={setSelectedImage}
-            onGenerate={handleGenerate}
+            onSelect={selectImage}
+            onGenerate={confirmImage}
           />
         )}
-        {step === 4 && selectedImage && selectedPlaylist && (
+        {step === 'mosaic' && selectedImage && selectedPlaylist && (
           <Mosaic
             image={selectedImage}
             playlist={selectedPlaylist}
             playlists={PLAYLISTS}
-            onReset={handleReset}
+            onReset={reset}
           />
         )}
       </main>
