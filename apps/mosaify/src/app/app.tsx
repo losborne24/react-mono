@@ -12,12 +12,8 @@ import {
 
 export function App() {
   const [step, setStep] = useState(1);
-  const [selectedPlaylist, setSelectedPlaylist] = useState<Playlist | null>(
-    null
-  );
-  const [selectedImage, setSelectedImage] = useState<PickableImage | null>(
-    null
-  );
+  const [selectedPlaylist, setSelectedPlaylist] = useState<Playlist | null>(null);
+  const [selectedImage, setSelectedImage] = useState<PickableImage | null>(null);
   const [generating, setGenerating] = useState(false);
 
   const advance = (from: number) => setStep(from + 1);
