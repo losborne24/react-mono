@@ -77,7 +77,7 @@ export function ConnectToSpotify({
         <button
           onClick={onConnect}
           disabled={checking || !configured}
-          className="flex items-center gap-3 px-8 py-4 rounded-xl font-semibold text-base transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
+          className="flex items-center gap-3 px-8 py-4 rounded-xl font-semibold text-base transition-all duration-200 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
           style={{ background: '#1db954', color: '#000' }}
         >
           {checking ? (

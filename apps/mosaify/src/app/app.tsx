@@ -21,11 +21,24 @@ function Brand() {
   );
 }
 
-function ConnectedBadge({ name }: { name: string }) {
+function ConnectedBadge({
+  name,
+  onSwitch,
+}: {
+  name: string;
+  onSwitch: () => void;
+}) {
   return (
     <div className="flex items-center gap-2 text-xs text-muted-foreground">
       <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
       Connected as {name}
+      <button
+        type="button"
+        onClick={onSwitch}
+        className="text-muted-foreground hover:text-foreground underline underline-offset-2 cursor-pointer transition-colors"
+      >
+        Switch
+      </button>
     </div>
   );
 }
@@ -35,12 +48,15 @@ export function App() {
     view,
     stepNumber,
     profile,
+    canGoBack,
     selectPlaylist,
     selectImage,
     connect,
     confirmPlaylist,
     confirmImage,
+    back,
     reset,
+    switchAccount,
   } = useMosaifyWizard();
 
   return (
@@ -57,7 +73,9 @@ export function App() {
       {/* Header */}
       <header className="relative z-10 flex items-center justify-between px-6 pt-6 pb-0">
         <Brand />
-        {profile && <ConnectedBadge name={profile.name} />}
+        {profile && (
+          <ConnectedBadge name={profile.name} onSwitch={switchAccount} />
+        )}
       </header>
 
       <WizardLayout stepNumber={stepNumber}>
@@ -76,6 +94,7 @@ export function App() {
             loading={view.loading}
             onSelect={selectPlaylist}
             onNext={confirmPlaylist}
+            onBack={canGoBack ? back : undefined}
           />
         )}
         {view.step === 'image' && (
@@ -84,6 +103,7 @@ export function App() {
             selected={view.selected}
             onSelect={selectImage}
             onGenerate={confirmImage}
+            onBack={canGoBack ? back : undefined}
           />
         )}
         {view.step === 'mosaic' && (

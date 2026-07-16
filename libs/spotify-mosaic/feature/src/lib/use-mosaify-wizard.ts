@@ -66,6 +66,8 @@ export interface MosaifyWizard {
   confirmImage: () => void;
   back: () => void;
   reset: () => void;
+  /** Sign out and return to the connect step to authenticate as someone else. */
+  switchAccount: () => void;
 }
 
 export function useMosaifyWizard(): MosaifyWizard {
@@ -183,6 +185,18 @@ export function useMosaifyWizard(): MosaifyWizard {
     setTiles([]);
   }, [status]);
 
+  const switchAccount = useCallback(() => {
+    logout();
+    setStatus('unauthenticated');
+    setProfile(null);
+    setPlaylists([]);
+    setSelectedPlaylist(null);
+    setSelectedImage(null);
+    setTiles([]);
+    setAuthError(null);
+    setStepIndex(0);
+  }, []);
+
   const step = WIZARD_STEPS[stepIndex];
 
   const buildView = (): WizardView => {
@@ -223,6 +237,7 @@ export function useMosaifyWizard(): MosaifyWizard {
     confirmImage,
     back,
     reset,
+    switchAccount,
   };
 }
 

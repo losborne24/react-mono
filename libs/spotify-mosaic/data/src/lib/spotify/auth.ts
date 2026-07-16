@@ -53,6 +53,9 @@ export async function beginLogin(): Promise<void> {
     code_challenge: challenge,
     state,
     scope: SPOTIFY_CONFIG.scopes.join(' '),
+    // Force the account/consent screen so users can pick a different account
+    // rather than being silently reauthenticated into their existing session.
+    show_dialog: 'true',
   });
 
   window.location.assign(`${SPOTIFY_CONFIG.authUrl}?${params.toString()}`);

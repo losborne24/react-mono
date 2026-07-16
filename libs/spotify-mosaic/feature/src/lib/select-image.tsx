@@ -1,5 +1,10 @@
 import { useRef, useState } from 'react';
-import { IconUpload, IconCheck, IconChevronRight } from '@tabler/icons-react';
+import {
+  IconUpload,
+  IconCheck,
+  IconChevronLeft,
+  IconChevronRight,
+} from '@tabler/icons-react';
 import type { SourceImage } from '@react-mono/models';
 
 export interface SelectImageProps {
@@ -7,6 +12,8 @@ export interface SelectImageProps {
   selected: SourceImage | null;
   onSelect: (image: SourceImage) => void;
   onGenerate: () => void;
+  /** Go to the previous step; hidden when omitted. */
+  onBack?: () => void;
 }
 
 export function SelectImage({
@@ -14,6 +21,7 @@ export function SelectImage({
   selected,
   onSelect,
   onGenerate,
+  onBack,
 }: SelectImageProps) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
@@ -68,7 +76,7 @@ export function SelectImage({
             <button
               key={img.id}
               onClick={() => onSelect(img)}
-              className="group relative rounded-lg overflow-hidden aspect-square border-2 transition-all duration-200"
+              className="group relative rounded-lg overflow-hidden aspect-square border-2 transition-all duration-200 cursor-pointer"
               style={{
                 borderColor: isSelected ? 'var(--primary)' : 'transparent',
               }}
@@ -105,15 +113,26 @@ export function SelectImage({
         ) : (
           <p className="text-sm text-muted-foreground">No image selected</p>
         )}
-        <button
-          onClick={onGenerate}
-          disabled={!selected}
-          className="flex items-center gap-2 px-6 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed"
-          style={{ background: '#1db954', color: '#000' }}
-        >
-          Generate Mosaic
-          <IconChevronRight size={16} />
-        </button>
+        <div className="flex items-center gap-2">
+          {onBack && (
+            <button
+              onClick={onBack}
+              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-semibold text-sm text-muted-foreground hover:text-foreground border border-border hover:bg-muted/50 transition-all duration-200 cursor-pointer"
+            >
+              <IconChevronLeft size={16} />
+              Back
+            </button>
+          )}
+          <button
+            onClick={onGenerate}
+            disabled={!selected}
+            className="flex items-center gap-2 px-6 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+            style={{ background: '#1db954', color: '#000' }}
+          >
+            Generate Mosaic
+            <IconChevronRight size={16} />
+          </button>
+        </div>
       </div>
     </div>
   );

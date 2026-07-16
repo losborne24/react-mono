@@ -1,4 +1,4 @@
-import { IconChevronRight } from '@tabler/icons-react';
+import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
 import type { Playlist } from '@react-mono/models';
 import { PlaylistCard } from '@react-mono/spotify-mosaic-ui';
 import { Loading } from '@react-mono/shared-ui';
@@ -8,6 +8,8 @@ export interface SelectPlaylistProps {
   selected: Playlist | null;
   onSelect: (playlist: Playlist) => void;
   onNext: () => void;
+  /** Go to the previous step; hidden when omitted. */
+  onBack?: () => void;
   /** True while playlists are being fetched from Spotify. */
   loading?: boolean;
 }
@@ -17,6 +19,7 @@ export function SelectPlaylist({
   selected,
   onSelect,
   onNext,
+  onBack,
   loading = false,
 }: SelectPlaylistProps) {
   return (
@@ -63,15 +66,26 @@ export function SelectPlaylist({
         ) : (
           <p className="text-sm text-muted-foreground">No playlist selected</p>
         )}
-        <button
-          onClick={onNext}
-          disabled={!selected}
-          className="flex items-center gap-2 px-6 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed"
-          style={{ background: '#1db954', color: '#000' }}
-        >
-          Next
-          <IconChevronRight size={16} />
-        </button>
+        <div className="flex items-center gap-2">
+          {onBack && (
+            <button
+              onClick={onBack}
+              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-semibold text-sm text-muted-foreground hover:text-foreground border border-border hover:bg-muted/50 transition-all duration-200 cursor-pointer"
+            >
+              <IconChevronLeft size={16} />
+              Back
+            </button>
+          )}
+          <button
+            onClick={onNext}
+            disabled={!selected}
+            className="flex items-center gap-2 px-6 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+            style={{ background: '#1db954', color: '#000' }}
+          >
+            Next
+            <IconChevronRight size={16} />
+          </button>
+        </div>
       </div>
     </div>
   );

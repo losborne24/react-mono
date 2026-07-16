@@ -58,19 +58,19 @@ export function Mosaic({ image, playlist, tiles, onReset }: MosaicProps) {
       {/* Actions */}
       <div className="flex items-center gap-3">
         <button
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200"
+          className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 cursor-pointer"
           style={{ background: '#1db954', color: '#000' }}
         >
           <IconDownload size={15} />
           Download
         </button>
-        <button className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm border border-border bg-card text-foreground hover:bg-secondary transition-all duration-200">
+        <button className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm border border-border bg-card text-foreground hover:bg-secondary transition-all duration-200 cursor-pointer">
           <IconShare2 size={15} />
           Share
         </button>
         <button
           onClick={onReset}
-          className="ml-auto flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm text-muted-foreground hover:text-foreground border border-border hover:border-border/60 transition-all duration-200"
+          className="ml-auto flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm text-muted-foreground hover:text-foreground border border-border hover:border-border/60 transition-all duration-200 cursor-pointer"
         >
           <IconRefresh size={14} />
           Start over
