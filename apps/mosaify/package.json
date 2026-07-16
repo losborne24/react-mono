@@ -11,6 +11,7 @@
   },
   "devDependencies": {
     "@react-mono/models": "*",
+    "@react-mono/shared-ui": "*",
     "@react-mono/spotify-mosaic-data": "*",
     "@react-mono/spotify-mosaic-feature": "*",
     "@react-mono/spotify-mosaic-ui": "*"

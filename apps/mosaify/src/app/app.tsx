@@ -1,4 +1,5 @@
 import { IconLayoutCollage } from '@tabler/icons-react';
+import { Button } from '@react-mono/shared-ui';
 import { WizardLayout } from '@react-mono/spotify-mosaic-ui';
 import {
   ConnectToSpotify,
@@ -32,13 +33,13 @@ function ConnectedBadge({
     <div className="flex items-center gap-2 text-xs text-muted-foreground">
       <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
       Connected as {name}
-      <button
-        type="button"
+      <Button
+        variant="link"
         onClick={onSwitch}
-        className="text-muted-foreground hover:text-foreground underline underline-offset-2 cursor-pointer transition-colors"
+        className="h-auto p-0 text-xs text-muted-foreground hover:text-foreground"
       >
         Switch
-      </button>
+      </Button>
     </div>
   );
 }

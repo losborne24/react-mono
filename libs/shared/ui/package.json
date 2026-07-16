@@ -18,6 +18,10 @@
     ]
   },
   "dependencies": {
-    "@tabler/icons-react": "*"
+    "@tabler/icons-react": "*",
+    "@radix-ui/react-slot": "*",
+    "class-variance-authority": "*",
+    "clsx": "*",
+    "tailwind-merge": "*"
   }
 }
