@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useStepper } from '@react-mono/shared-ui';
+import { useStepper, type StepperStep } from '@react-mono/shared-ui';
 import type { Playlist, SourceImage } from '@react-mono/models';
 import {
   SAMPLE_IMAGES,
@@ -14,9 +14,26 @@ import {
   logout,
 } from '@react-mono/spotify-mosaic-data';
 
-export const WIZARD_STEPS = ['connect', 'playlist', 'image', 'mosaic'] as const;
+/**
+ * Canonical wizard step definitions — single source of truth for step ids,
+ * labels, and ordering. `WIZARD_STEPS` (id union) and `WIZARD_STEP_INDICATORS`
+ * (display shape for the UI indicator) both derive from this.
+ */
+export const WIZARD_STEP_DEFS = [
+  { id: 'connect', label: 'Connect' },
+  { id: 'playlist', label: 'Playlist' },
+  { id: 'image', label: 'Image' },
+  { id: 'mosaic', label: 'Mosaic' },
+] as const;
+
+export const WIZARD_STEPS = WIZARD_STEP_DEFS.map((s) => s.id);
 
 export type WizardStep = (typeof WIZARD_STEPS)[number];
+
+/** Display steps for the UI `WizardLayout` / `Stepper`. */
+export const WIZARD_STEP_INDICATORS: StepperStep[] = WIZARD_STEP_DEFS.map((s) => ({
+  label: s.label,
+}));
 
 export type AuthStatus =
   | 'checking' // resolving an OAuth redirect / existing session

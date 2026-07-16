@@ -7,6 +7,7 @@ import {
   SelectImage,
   Mosaic,
   useMosaifyWizard,
+  WIZARD_STEP_INDICATORS,
 } from '@react-mono/spotify-mosaic-feature';
 
 function Brand() {
@@ -68,7 +69,7 @@ export function App() {
         {profile && <ConnectedBadge name={profile.name} onSwitch={switchAccount} />}
       </header>
 
-      <WizardLayout stepNumber={stepNumber} onBack={back}>
+      <WizardLayout stepNumber={stepNumber} steps={WIZARD_STEP_INDICATORS} onBack={back}>
         {view.step === 'connect' && (
           <ConnectToSpotify
             onConnect={connect}

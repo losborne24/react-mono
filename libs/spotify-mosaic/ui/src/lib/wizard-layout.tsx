@@ -1,10 +1,12 @@
 import type { ReactNode } from 'react';
 import { IconChevronLeft } from '@tabler/icons-react';
-import { StepIndicator } from './step-indicator';
+import { Stepper, type StepperStep } from '@react-mono/shared-ui';
 
 export interface WizardLayoutProps {
   /** 1-based current step, drives the step indicator. */
   stepNumber: number;
+  /** Step definitions rendered by the indicator. */
+  steps: StepperStep[];
   /** Go to the previous step; the Back control is hidden when omitted. */
   onBack?: () => void;
   children: ReactNode;
@@ -14,12 +16,12 @@ export interface WizardLayoutProps {
  * Wizard chrome: step indicator, optional Back control + step content.
  * Brand-agnostic — the host app owns the surrounding shell and header.
  */
-export function WizardLayout({ stepNumber, onBack, children }: WizardLayoutProps) {
+export function WizardLayout({ stepNumber, steps, onBack, children }: WizardLayoutProps) {
   return (
     <>
       {/* Step indicator */}
       <div className="relative z-10">
-        <StepIndicator current={stepNumber} />
+        <Stepper current={stepNumber} steps={steps} />
       </div>
 
       {/* Back control */}
