@@ -3,11 +3,7 @@
   "compilerOptions": {
     "outDir": "dist",
     "lib": ["es2022", "dom"],
-    "types": [
-      "node",
-      "@nx/react/typings/cssmodule.d.ts",
-      "@nx/react/typings/image.d.ts"
-    ],
+    "types": ["node", "@nx/react/typings/cssmodule.d.ts", "@nx/react/typings/image.d.ts"],
     "rootDir": "src",
     "jsx": "react-jsx",
     "tsBuildInfoFile": "dist/tsconfig.lib.tsbuildinfo"
@@ -41,6 +37,9 @@
   ],
   "include": ["src/**/*.js", "src/**/*.jsx", "src/**/*.ts", "src/**/*.tsx"],
   "references": [
+    {
+      "path": "../../shared/ui/tsconfig.lib.json"
+    },
     {
       "path": "../../shared/models/tsconfig.lib.json"
     }

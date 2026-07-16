@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@react-mono/models": "*",
+    "@react-mono/shared-ui": "*",
     "@tabler/icons-react": "*"
   }
 }

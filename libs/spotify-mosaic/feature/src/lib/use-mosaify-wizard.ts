@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useStepper } from '@react-mono/shared-ui';
 import type { Playlist, SourceImage } from '@react-mono/models';
 import {
   SAMPLE_IMAGES,
@@ -66,7 +67,7 @@ export interface MosaifyWizard {
 }
 
 export function useMosaifyWizard(): MosaifyWizard {
-  const [stepIndex, setStepIndex] = useState(0);
+  const stepper = useStepper({ count: WIZARD_STEPS.length });
   const [selectedPlaylist, setSelectedPlaylist] = useState<Playlist | null>(null);
   const [selectedImage, setSelectedImage] = useState<SourceImage | null>(null);
 
@@ -141,18 +142,8 @@ export function useMosaifyWizard(): MosaifyWizard {
   }, [status]);
 
   useEffect(() => {
-    if (status === 'authenticated') setStepIndex((i) => (i === 0 ? 1 : i));
-  }, [status]);
-
-  const advance = () => {
-    setStepIndex((i) => {
-      if (i + 1 > WIZARD_STEPS.length - 1) {
-        console.warn('[mosaify-wizard] advance() called on last step; no-op.');
-        return i;
-      }
-      return i + 1;
-    });
-  };
+    if (status === 'authenticated' && stepper.index === 0) stepper.goTo(1);
+  }, [status, stepper]);
 
   const connect = () => {
     if (!configured) return;
@@ -163,7 +154,7 @@ export function useMosaifyWizard(): MosaifyWizard {
 
   const confirmPlaylist = () => {
     if (!selectedPlaylist) return;
-    advance();
+    stepper.next();
     // Fetch the chosen playlist's album art to use as mosaic tiles.
     fetchPlaylistArtwork(selectedPlaylist.id)
       .then((art) => setTiles(art))
@@ -171,7 +162,7 @@ export function useMosaifyWizard(): MosaifyWizard {
   };
 
   const confirmImage = () => {
-    if (selectedImage) advance();
+    if (selectedImage) stepper.next();
   };
 
   const switchAccount = () => {
@@ -183,12 +174,12 @@ export function useMosaifyWizard(): MosaifyWizard {
     setSelectedImage(null);
     setTiles([]);
     setAuthError(null);
-    setStepIndex(0);
+    stepper.goTo(0);
   };
 
   const reset = () => {
     // Start over at the first interactive step: playlist when signed in.
-    setStepIndex(status === 'authenticated' ? 1 : 0);
+    stepper.goTo(status === 'authenticated' ? 1 : 0);
     setSelectedPlaylist(null);
     setSelectedImage(null);
     setTiles([]);
@@ -197,14 +188,14 @@ export function useMosaifyWizard(): MosaifyWizard {
   const back = () => {
     // Backing out of `playlist` (first post-auth step) signs out — same as
     // "switch account". Deeper steps step back one.
-    if (status === 'authenticated' && stepIndex <= 1) {
+    if (status === 'authenticated' && stepper.index <= 1) {
       switchAccount();
       return;
     }
-    setStepIndex((i) => Math.max(i - 1, 0));
+    stepper.back();
   };
 
-  const step = WIZARD_STEPS[Math.min(stepIndex, WIZARD_STEPS.length - 1)];
+  const step = WIZARD_STEPS[stepper.index];
 
   const buildView = (): WizardView => {
     switch (step) {
@@ -233,12 +224,10 @@ export function useMosaifyWizard(): MosaifyWizard {
   return {
     step,
     view: buildView(),
-    // Absolute number so the 4-dot indicator shows Connect as done once
-    // authenticated, even though it's no longer part of `activeSteps`.
     stepNumber: WIZARD_STEPS.indexOf(step) + 1,
     totalSteps: WIZARD_STEPS.length,
     profile,
-    canGoBack: stepIndex > 0,
+    canGoBack: stepper.canBack,
     selectPlaylist: setSelectedPlaylist,
     selectImage: setSelectedImage,
     connect,
