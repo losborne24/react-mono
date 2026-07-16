@@ -15,16 +15,16 @@ export function App() {
   const [selectedPlaylist, setSelectedPlaylist] = useState<Playlist | null>(null);
   const [selectedImage, setSelectedImage] = useState<SourceImage | null>(null);
 
-  const advance = (from: number) => setStep(from + 1);
+  const advance = () => setStep((s) => s + 1);
 
-  const handleConnect = () => advance(1);
+  const handleConnect = () => advance();
 
   const handlePlaylistNext = () => {
-    if (selectedPlaylist) advance(2);
+    if (selectedPlaylist) advance();
   };
 
   const handleGenerate = () => {
-    if (selectedImage) advance(3);
+    if (selectedImage) advance();
   };
 
   const handleReset = () => {
