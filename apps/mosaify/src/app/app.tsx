@@ -32,12 +32,9 @@ function ConnectedBadge() {
 
 export function App() {
   const {
-    step,
+    view,
     stepNumber,
     playlists,
-    images,
-    selectedPlaylist,
-    selectedImage,
     selectPlaylist,
     selectImage,
     connect,
@@ -49,30 +46,30 @@ export function App() {
   return (
     <WizardLayout
       brand={<Brand />}
-      headerAction={step !== 'connect' ? <ConnectedBadge /> : undefined}
+      headerAction={view.step !== 'connect' ? <ConnectedBadge /> : undefined}
       stepNumber={stepNumber}
     >
-      {step === 'connect' && <ConnectToSpotify onConnect={connect} />}
-      {step === 'playlist' && (
+      {view.step === 'connect' && <ConnectToSpotify onConnect={connect} />}
+      {view.step === 'playlist' && (
         <SelectPlaylist
-          playlists={playlists}
-          selected={selectedPlaylist}
+          playlists={view.playlists}
+          selected={view.selected}
           onSelect={selectPlaylist}
           onNext={confirmPlaylist}
         />
       )}
-      {step === 'image' && (
+      {view.step === 'image' && (
         <SelectImage
-          images={images}
-          selected={selectedImage}
+          images={view.images}
+          selected={view.selected}
           onSelect={selectImage}
           onGenerate={confirmImage}
         />
       )}
-      {step === 'mosaic' && selectedImage && selectedPlaylist && (
+      {view.step === 'mosaic' && (
         <Mosaic
-          image={selectedImage}
-          playlist={selectedPlaylist}
+          image={view.image}
+          playlist={view.playlist}
           playlists={playlists}
           onReset={reset}
         />

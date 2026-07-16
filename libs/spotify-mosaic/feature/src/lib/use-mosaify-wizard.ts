@@ -11,8 +11,19 @@ export const WIZARD_STEPS = [
 
 export type WizardStep = (typeof WIZARD_STEPS)[number];
 
+/**
+ * Render-ready view of the current step. The `mosaic` variant guarantees
+ * non-null `image`/`playlist`, so the shell cannot render Mosaic without data.
+ */
+export type WizardView =
+  | { step: 'connect' }
+  | { step: 'playlist'; playlists: Playlist[]; selected: Playlist | null }
+  | { step: 'image'; images: SourceImage[]; selected: SourceImage | null }
+  | { step: 'mosaic'; image: SourceImage; playlist: Playlist };
+
 export interface MosaifyWizard {
   step: WizardStep;
+  view: WizardView;
   stepIndex: number;
   stepNumber: number;
   totalSteps: number;
@@ -61,8 +72,30 @@ export function useMosaifyWizard(): MosaifyWizard {
     setSelectedImage(null);
   }, []);
 
+  const step = WIZARD_STEPS[stepIndex];
+
+  const buildView = (): WizardView => {
+    switch (step) {
+      case 'playlist':
+        return { step, playlists: PLAYLISTS, selected: selectedPlaylist };
+      case 'image':
+        return { step, images: SAMPLE_IMAGES, selected: selectedImage };
+      case 'mosaic':
+        // Guaranteed by confirmPlaylist/confirmImage advance guards; fall back
+        // to connect if state was somehow reached without data.
+        if (selectedImage && selectedPlaylist) {
+          return { step, image: selectedImage, playlist: selectedPlaylist };
+        }
+        return { step: 'connect' };
+      case 'connect':
+      default:
+        return { step: 'connect' };
+    }
+  };
+
   return {
-    step: WIZARD_STEPS[stepIndex],
+    step,
+    view: buildView(),
     stepIndex,
     stepNumber: stepIndex + 1,
     totalSteps: WIZARD_STEPS.length,
