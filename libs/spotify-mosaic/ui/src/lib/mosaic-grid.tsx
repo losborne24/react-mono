@@ -1,16 +1,16 @@
-import type { Album, PickableImage } from '@react-mono/models';
+import type { Playlist, PickableImage } from '@react-mono/models';
 
 export interface MosaicGridProps {
   image: PickableImage;
-  albums: Album[];
+  playlists: Playlist[];
   cols?: number;
   rows?: number;
 }
 
-// Album arts tiled with the target image blended over for color fidelity.
+// Playlist arts tiled with the target image blended over for color fidelity.
 export function MosaicGrid({
   image,
-  albums,
+  playlists,
   cols = 22,
   rows = 16,
 }: MosaicGridProps) {
@@ -18,8 +18,8 @@ export function MosaicGrid({
 
   const tiles = Array.from({ length: total }, (_, i) => {
     // Deterministic but varied distribution
-    const spread = (i * 11 + Math.floor(i / cols) * 7 + (i % 3) * 3) % albums.length;
-    return albums[spread];
+    const spread = (i * 11 + Math.floor(i / cols) * 7 + (i % 3) * 3) % playlists.length;
+    return playlists[spread];
   });
 
   return (
@@ -32,10 +32,10 @@ export function MosaicGrid({
         className="absolute inset-0 grid"
         style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}
       >
-        {tiles.map((album, i) => (
+        {tiles.map((playlist, i) => (
           <div key={i} className="overflow-hidden bg-muted">
             <img
-              src={album.img}
+              src={playlist.img}
               alt=""
               className="w-full h-full object-cover"
               loading="lazy"

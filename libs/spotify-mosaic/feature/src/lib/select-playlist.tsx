@@ -1,20 +1,20 @@
 import { ChevronRight } from 'lucide-react';
-import type { Album } from '@react-mono/models';
-import { AlbumCard } from '@react-mono/spotify-mosaic-ui';
+import type { Playlist } from '@react-mono/models';
+import { PlaylistCard } from '@react-mono/spotify-mosaic-ui';
 
-export interface SelectAlbumProps {
-  albums: Album[];
-  selected: Album | null;
-  onSelect: (album: Album) => void;
+export interface SelectPlaylistProps {
+  playlists: Playlist[];
+  selected: Playlist | null;
+  onSelect: (playlist: Playlist) => void;
   onNext: () => void;
 }
 
-export function SelectAlbum({
-  albums,
+export function SelectPlaylist({
+  playlists,
   selected,
   onSelect,
   onNext,
-}: SelectAlbumProps) {
+}: SelectPlaylistProps) {
   return (
     <div className="flex flex-col flex-1 px-6 pb-12 max-w-3xl mx-auto w-full">
       <div className="mb-6">
@@ -22,20 +22,20 @@ export function SelectAlbum({
           className="text-2xl font-bold text-foreground mb-1"
           style={{ fontFamily: "'Bricolage Grotesque', sans-serif" }}
         >
-          Choose an album
+          Choose a playlist
         </h2>
         <p className="text-muted-foreground text-sm">
-          Select which album&apos;s artwork will tile your mosaic.
+          Select which playlist&apos;s artwork will tile your mosaic.
         </p>
       </div>
 
-      {/* Album grid */}
+      {/* Playlist grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mb-8">
-        {albums.map((album) => (
-          <AlbumCard
-            key={album.id}
-            album={album}
-            selected={selected?.id === album.id}
+        {playlists.map((playlist) => (
+          <PlaylistCard
+            key={playlist.id}
+            playlist={playlist}
+            selected={selected?.id === playlist.id}
             onSelect={onSelect}
           />
         ))}
@@ -48,7 +48,7 @@ export function SelectAlbum({
             {selected.artist} selected
           </p>
         ) : (
-          <p className="text-sm text-muted-foreground">No album selected</p>
+          <p className="text-sm text-muted-foreground">No playlist selected</p>
         )}
         <button
           onClick={onNext}
@@ -64,4 +64,4 @@ export function SelectAlbum({
   );
 }
 
-export default SelectAlbum;
+export default SelectPlaylist;

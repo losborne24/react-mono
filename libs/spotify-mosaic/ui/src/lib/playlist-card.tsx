@@ -1,16 +1,16 @@
 import { Check } from 'lucide-react';
-import type { Album } from '@react-mono/models';
+import type { Playlist } from '@react-mono/models';
 
-export interface AlbumCardProps {
-  album: Album;
+export interface PlaylistCardProps {
+  playlist: Playlist;
   selected: boolean;
-  onSelect: (album: Album) => void;
+  onSelect: (playlist: Playlist) => void;
 }
 
-export function AlbumCard({ album, selected, onSelect }: AlbumCardProps) {
+export function PlaylistCard({ playlist, selected, onSelect }: PlaylistCardProps) {
   return (
     <button
-      onClick={() => onSelect(album)}
+      onClick={() => onSelect(playlist)}
       className="group relative flex flex-col gap-2 rounded-xl p-2 text-left transition-all duration-200 border"
       style={{
         background: selected ? 'rgba(29,185,84,0.08)' : 'var(--card)',
@@ -20,8 +20,8 @@ export function AlbumCard({ album, selected, onSelect }: AlbumCardProps) {
     >
       <div className="relative rounded-lg overflow-hidden aspect-square bg-muted">
         <img
-          src={album.img}
-          alt={album.title}
+          src={playlist.img}
+          alt={playlist.title}
           className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
         />
         {selected && (
@@ -34,17 +34,17 @@ export function AlbumCard({ album, selected, onSelect }: AlbumCardProps) {
       </div>
       <div className="px-0.5 pb-0.5">
         <p className="text-xs font-semibold text-foreground truncate leading-tight">
-          {album.title}
+          {playlist.title}
         </p>
         <p className="text-[11px] text-muted-foreground truncate">
-          {album.artist}
+          {playlist.artist}
         </p>
         <p className="text-[10px] text-muted-foreground/60 mt-0.5">
-          {album.year} · {album.tracks} tracks
+          {playlist.year} · {playlist.tracks} tracks
         </p>
       </div>
     </button>
   );
 }
 
-export default AlbumCard;
+export default PlaylistCard;

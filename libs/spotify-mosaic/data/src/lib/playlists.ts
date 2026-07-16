@@ -1,6 +1,6 @@
-import type { Album } from '@react-mono/models';
+import type { Playlist } from '@react-mono/models';
 
-export const ALBUMS: Album[] = [
+export const PLAYLISTS: Playlist[] = [
   {
     id: '1',
     title: 'After Hours',

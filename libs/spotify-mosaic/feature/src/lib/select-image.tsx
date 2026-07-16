@@ -31,7 +31,7 @@ export function SelectImage({
           Pick a target image
         </h2>
         <p className="text-muted-foreground text-sm">
-          This photo will be recreated using your album&apos;s artwork as tiles.
+          This photo will be recreated using your playlist&apos;s artwork as tiles.
         </p>
       </div>
 

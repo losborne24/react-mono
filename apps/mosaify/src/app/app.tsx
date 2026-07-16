@@ -1,33 +1,31 @@
 import { useState } from 'react';
 import { Layers } from 'lucide-react';
-import type { Album, PickableImage } from '@react-mono/models';
-import { ALBUMS, SAMPLE_IMAGES } from '@react-mono/spotify-mosaic-data';
+import type { Playlist, PickableImage } from '@react-mono/models';
+import { PLAYLISTS, SAMPLE_IMAGES } from '@react-mono/spotify-mosaic-data';
 import { StepIndicator } from '@react-mono/spotify-mosaic-ui';
 import {
   ConnectToSpotify,
-  SelectAlbum,
+  SelectPlaylist,
   SelectImage,
   Mosaic,
 } from '@react-mono/spotify-mosaic-feature';
 
 export function App() {
   const [step, setStep] = useState(1);
-  const [completed, setCompleted] = useState<number[]>([]);
-  const [selectedAlbum, setSelectedAlbum] = useState<Album | null>(null);
+  const [selectedPlaylist, setSelectedPlaylist] = useState<Playlist | null>(
+    null
+  );
   const [selectedImage, setSelectedImage] = useState<PickableImage | null>(
     null
   );
   const [generating, setGenerating] = useState(false);
 
-  const advance = (from: number) => {
-    setCompleted((prev) => (prev.includes(from) ? prev : [...prev, from]));
-    setStep(from + 1);
-  };
+  const advance = (from: number) => setStep(from + 1);
 
   const handleConnect = () => advance(1);
 
-  const handleAlbumNext = () => {
-    if (selectedAlbum) advance(2);
+  const handlePlaylistNext = () => {
+    if (selectedPlaylist) advance(2);
   };
 
   const handleGenerate = () => {
@@ -41,8 +39,7 @@ export function App() {
 
   const handleReset = () => {
     setStep(1);
-    setCompleted([]);
-    setSelectedAlbum(null);
+    setSelectedPlaylist(null);
     setSelectedImage(null);
     setGenerating(false);
   };
@@ -84,18 +81,18 @@ export function App() {
 
       {/* Step indicator */}
       <div className="relative z-10">
-        <StepIndicator current={step} completed={completed} />
+        <StepIndicator current={step} />
       </div>
 
       {/* Step content */}
       <main className="relative z-10 flex flex-col flex-1">
         {step === 1 && <ConnectToSpotify onConnect={handleConnect} />}
         {step === 2 && (
-          <SelectAlbum
-            albums={ALBUMS}
-            selected={selectedAlbum}
-            onSelect={setSelectedAlbum}
-            onNext={handleAlbumNext}
+          <SelectPlaylist
+            playlists={PLAYLISTS}
+            selected={selectedPlaylist}
+            onSelect={setSelectedPlaylist}
+            onNext={handlePlaylistNext}
           />
         )}
         {step === 3 && (
@@ -107,11 +104,11 @@ export function App() {
             generating={generating}
           />
         )}
-        {step === 4 && selectedImage && selectedAlbum && (
+        {step === 4 && selectedImage && selectedPlaylist && (
           <Mosaic
             image={selectedImage}
-            album={selectedAlbum}
-            albums={ALBUMS}
+            playlist={selectedPlaylist}
+            playlists={PLAYLISTS}
             onReset={handleReset}
           />
         )}

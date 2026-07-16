@@ -53,7 +53,7 @@ export function ConnectToSpotify({ onConnect }: ConnectToSpotifyProps) {
           </h1>
           <p className="text-muted-foreground text-base leading-relaxed">
             Connect your Spotify account to build stunning photo mosaics from
-            your album artwork.
+            your playlist artwork.
           </p>
         </div>
 

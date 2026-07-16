@@ -7,26 +7,21 @@ export interface Step {
 
 export const STEPS: Step[] = [
   { n: 1, label: 'Connect' },
-  { n: 2, label: 'Album' },
+  { n: 2, label: 'Playlist' },
   { n: 3, label: 'Image' },
   { n: 4, label: 'Mosaic' },
 ];
 
 export interface StepIndicatorProps {
   current: number;
-  completed: number[];
   steps?: Step[];
 }
 
-export function StepIndicator({
-  current,
-  completed,
-  steps = STEPS,
-}: StepIndicatorProps) {
+export function StepIndicator({ current, steps = STEPS }: StepIndicatorProps) {
   return (
     <div className="flex items-center gap-0 justify-center py-8">
       {steps.map((step, i) => {
-        const isDone = completed.includes(step.n);
+        const isDone = step.n < current;
         const isCurrent = current === step.n;
         return (
           <div key={step.n} className="flex items-center">

@@ -1,5 +1,5 @@
 import { Download, Share2, RefreshCw } from 'lucide-react';
-import type { Album, PickableImage } from '@react-mono/models';
+import type { Playlist, PickableImage } from '@react-mono/models';
 import { MosaicGrid } from '@react-mono/spotify-mosaic-ui';
 
 const COLS = 22;
@@ -7,19 +7,19 @@ const ROWS = 16;
 
 export interface MosaicProps {
   image: PickableImage;
-  album: Album;
-  albums: Album[];
+  playlist: Playlist;
+  playlists: Playlist[];
   onReset: () => void;
 }
 
-export function Mosaic({ image, album, albums, onReset }: MosaicProps) {
+export function Mosaic({ image, playlist, playlists, onReset }: MosaicProps) {
   const total = COLS * ROWS;
 
   const stats = [
     { label: 'Tiles', value: `${total.toLocaleString()}` },
-    { label: 'Unique artworks', value: `${albums.length}` },
+    { label: 'Unique artworks', value: `${playlists.length}` },
     { label: 'Resolution', value: `${COLS * 30}×${ROWS * 30}px` },
-    { label: 'Album', value: album.artist },
+    { label: 'Playlist', value: playlist.artist },
   ];
 
   return (
@@ -33,13 +33,13 @@ export function Mosaic({ image, album, albums, onReset }: MosaicProps) {
         </h2>
         <p className="text-muted-foreground text-sm">
           {image.label} · recreated from{' '}
-          <span className="text-foreground/80">{album.title}</span> artwork
+          <span className="text-foreground/80">{playlist.title}</span> artwork
         </p>
       </div>
 
       {/* Mosaic */}
       <div className="flex justify-center mb-6">
-        <MosaicGrid image={image} albums={albums} cols={COLS} rows={ROWS} />
+        <MosaicGrid image={image} playlists={playlists} cols={COLS} rows={ROWS} />
       </div>
 
       {/* Stats strip */}
