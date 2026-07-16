@@ -59,7 +59,8 @@ export interface MosaifyWizard {
   connect: () => void;
   confirmPlaylist: () => void;
   confirmImage: () => void;
-  back: () => void;
+  /** Go to the previous step, or `undefined` when back isn't offered. */
+  back: (() => void) | undefined;
   reset: () => void;
   /** Sign out and return to the connect step to authenticate as someone else. */
   switchAccount: () => void;
@@ -233,7 +234,8 @@ export function useMosaifyWizard(): MosaifyWizard {
     connect,
     confirmPlaylist,
     confirmImage,
-    back,
+    // Back is offered on every step past the first (connect).
+    back: stepper.canBack ? back : undefined,
     reset,
     switchAccount,
   };

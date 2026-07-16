@@ -68,10 +68,7 @@ export function App() {
         {profile && <ConnectedBadge name={profile.name} onSwitch={switchAccount} />}
       </header>
 
-      <WizardLayout
-        stepNumber={stepNumber}
-        onBack={view.step === 'playlist' || view.step === 'image' ? back : undefined}
-      >
+      <WizardLayout stepNumber={stepNumber} onBack={back}>
         {view.step === 'connect' && (
           <ConnectToSpotify
             onConnect={connect}
