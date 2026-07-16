@@ -1,14 +1,12 @@
 import { useRef, useState } from 'react';
 import { Upload, Check, ChevronRight } from 'lucide-react';
 import type { SourceImage } from '@react-mono/models';
-import { Loading } from '@react-mono/shared-ui';
 
 export interface SelectImageProps {
   images: SourceImage[];
   selected: SourceImage | null;
   onSelect: (image: SourceImage) => void;
   onGenerate: () => void;
-  generating: boolean;
 }
 
 export function SelectImage({
@@ -16,7 +14,6 @@ export function SelectImage({
   selected,
   onSelect,
   onGenerate,
-  generating,
 }: SelectImageProps) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
@@ -113,18 +110,12 @@ export function SelectImage({
         )}
         <button
           onClick={onGenerate}
-          disabled={!selected || generating}
+          disabled={!selected}
           className="flex items-center gap-2 px-6 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed"
           style={{ background: '#1db954', color: '#000' }}
         >
-          {generating ? (
-            <Loading label="Generating…" size={16} className="text-black" />
-          ) : (
-            <>
-              Generate Mosaic
-              <ChevronRight size={16} />
-            </>
-          )}
+          Generate Mosaic
+          <ChevronRight size={16} />
         </button>
       </div>
     </div>

@@ -14,7 +14,6 @@ export function App() {
   const [step, setStep] = useState(1);
   const [selectedPlaylist, setSelectedPlaylist] = useState<Playlist | null>(null);
   const [selectedImage, setSelectedImage] = useState<SourceImage | null>(null);
-  const [generating, setGenerating] = useState(false);
 
   const advance = (from: number) => setStep(from + 1);
 
@@ -25,19 +24,13 @@ export function App() {
   };
 
   const handleGenerate = () => {
-    if (!selectedImage) return;
-    setGenerating(true);
-    setTimeout(() => {
-      setGenerating(false);
-      advance(3);
-    }, 2000);
+    if (!selectedImage) advance(3);
   };
 
   const handleReset = () => {
     setStep(1);
     setSelectedPlaylist(null);
     setSelectedImage(null);
-    setGenerating(false);
   };
 
   return (
@@ -97,7 +90,6 @@ export function App() {
             selected={selectedImage}
             onSelect={setSelectedImage}
             onGenerate={handleGenerate}
-            generating={generating}
           />
         )}
         {step === 4 && selectedImage && selectedPlaylist && (
