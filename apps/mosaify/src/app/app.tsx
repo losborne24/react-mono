@@ -15,20 +15,12 @@ function Brand() {
       <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
         <IconLayoutCollage size={14} className="text-black" />
       </div>
-      <span className="font-display font-bold text-sm tracking-tight text-foreground">
-        Mosaify
-      </span>
+      <span className="font-display font-bold text-sm tracking-tight text-foreground">Mosaify</span>
     </div>
   );
 }
 
-function ConnectedBadge({
-  name,
-  onSwitch,
-}: {
-  name: string;
-  onSwitch: () => void;
-}) {
+function ConnectedBadge({ name, onSwitch }: { name: string; onSwitch: () => void }) {
   return (
     <div className="flex items-center gap-2 text-xs text-muted-foreground">
       <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
@@ -49,7 +41,6 @@ export function App() {
     view,
     stepNumber,
     profile,
-    canGoBack,
     selectPlaylist,
     selectImage,
     connect,
@@ -74,12 +65,13 @@ export function App() {
       {/* Header */}
       <header className="relative z-10 flex items-center justify-between px-6 pt-6 pb-0">
         <Brand />
-        {profile && (
-          <ConnectedBadge name={profile.name} onSwitch={switchAccount} />
-        )}
+        {profile && <ConnectedBadge name={profile.name} onSwitch={switchAccount} />}
       </header>
 
-      <WizardLayout stepNumber={stepNumber}>
+      <WizardLayout
+        stepNumber={stepNumber}
+        onBack={view.step === 'playlist' || view.step === 'image' ? back : undefined}
+      >
         {view.step === 'connect' && (
           <ConnectToSpotify
             onConnect={connect}
@@ -95,7 +87,6 @@ export function App() {
             loading={view.loading}
             onSelect={selectPlaylist}
             onNext={confirmPlaylist}
-            onBack={canGoBack ? back : undefined}
           />
         )}
         {view.step === 'image' && (
@@ -104,16 +95,10 @@ export function App() {
             selected={view.selected}
             onSelect={selectImage}
             onGenerate={confirmImage}
-            onBack={canGoBack ? back : undefined}
           />
         )}
         {view.step === 'mosaic' && (
-          <Mosaic
-            image={view.image}
-            playlist={view.playlist}
-            tiles={view.tiles}
-            onReset={reset}
-          />
+          <Mosaic image={view.image} playlist={view.playlist} tiles={view.tiles} onReset={reset} />
         )}
       </WizardLayout>
     </div>

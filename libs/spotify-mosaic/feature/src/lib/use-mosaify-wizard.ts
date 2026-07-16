@@ -54,7 +54,6 @@ export interface MosaifyWizard {
   stepNumber: number;
   totalSteps: number;
   profile: SpotifyProfile | null;
-  canGoBack: boolean;
   selectPlaylist: (playlist: Playlist | null) => void;
   selectImage: (image: SourceImage | null) => void;
   connect: () => void;
@@ -209,12 +208,14 @@ export function useMosaifyWizard(): MosaifyWizard {
       case 'image':
         return { step, images: SAMPLE_IMAGES, selected: selectedImage };
       case 'mosaic':
-        // Guaranteed by confirmPlaylist/confirmImage advance guards; fall back
-        // to connect if state was somehow reached without data.
         if (selectedImage && selectedPlaylist) {
           return { step, image: selectedImage, playlist: selectedPlaylist, tiles };
         }
-        return { step: 'connect', status, configured, error: authError };
+        // Invariant: `mosaic` (index 3) is only reachable via confirmImage /
+        // confirmPlaylist, which won't advance without the data, and reset /
+        // switchAccount clear selections and index together. If this throws,
+        // a step guard broke upstream — fail loud rather than mask it.
+        throw new Error('[mosaify] reached `mosaic` step without selections');
       case 'connect':
       default:
         return { step: 'connect', status, configured, error: authError };
@@ -227,7 +228,6 @@ export function useMosaifyWizard(): MosaifyWizard {
     stepNumber: WIZARD_STEPS.indexOf(step) + 1,
     totalSteps: WIZARD_STEPS.length,
     profile,
-    canGoBack: stepper.canBack,
     selectPlaylist: setSelectedPlaylist,
     selectImage: setSelectedImage,
     connect,

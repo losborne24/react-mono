@@ -1,10 +1,5 @@
 import { useRef, useState } from 'react';
-import {
-  IconUpload,
-  IconCheck,
-  IconChevronLeft,
-  IconChevronRight,
-} from '@tabler/icons-react';
+import { IconUpload, IconCheck, IconChevronRight } from '@tabler/icons-react';
 import type { SourceImage } from '@react-mono/models';
 
 export interface SelectImageProps {
@@ -12,17 +7,9 @@ export interface SelectImageProps {
   selected: SourceImage | null;
   onSelect: (image: SourceImage) => void;
   onGenerate: () => void;
-  /** Go to the previous step; hidden when omitted. */
-  onBack?: () => void;
 }
 
-export function SelectImage({
-  images,
-  selected,
-  onSelect,
-  onGenerate,
-  onBack,
-}: SelectImageProps) {
+export function SelectImage({ images, selected, onSelect, onGenerate }: SelectImageProps) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
 
@@ -58,9 +45,7 @@ export function SelectImage({
         <IconUpload size={16} className="text-muted-foreground" />
         <span className="text-sm text-muted-foreground">
           Drop an image or{' '}
-          <span className="text-primary underline underline-offset-2">
-            browse files
-          </span>
+          <span className="text-primary underline underline-offset-2">browse files</span>
         </span>
         <input ref={fileRef} type="file" accept="image/*" className="hidden" />
       </div>
@@ -95,9 +80,7 @@ export function SelectImage({
                 </div>
               )}
               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-end p-1.5">
-                <span className="text-[10px] text-white font-medium">
-                  {img.label}
-                </span>
+                <span className="text-[10px] text-white font-medium">{img.label}</span>
               </div>
             </button>
           );
@@ -107,22 +90,12 @@ export function SelectImage({
       <div className="flex items-center justify-between mt-auto">
         {selected ? (
           <p className="text-sm text-muted-foreground">
-            <span className="text-primary font-medium">{selected.label}</span>{' '}
-            selected
+            <span className="text-primary font-medium">{selected.label}</span> selected
           </p>
         ) : (
           <p className="text-sm text-muted-foreground">No image selected</p>
         )}
         <div className="flex items-center gap-2">
-          {onBack && (
-            <button
-              onClick={onBack}
-              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-semibold text-sm text-muted-foreground hover:text-foreground border border-border hover:bg-muted/50 transition-all duration-200 cursor-pointer"
-            >
-              <IconChevronLeft size={16} />
-              Back
-            </button>
-          )}
           <button
             onClick={onGenerate}
             disabled={!selected}
