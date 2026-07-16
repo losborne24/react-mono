@@ -1,7 +1,7 @@
-import type { Playlist, PickableImage } from '@react-mono/models';
+import type { Playlist, SourceImage } from '@react-mono/models';
 
 export interface MosaicGridProps {
-  image: PickableImage;
+  image: SourceImage;
   playlists: Playlist[];
   cols?: number;
   rows?: number;

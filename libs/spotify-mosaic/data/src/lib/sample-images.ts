@@ -1,6 +1,6 @@
-import type { PickableImage } from '@react-mono/models';
+import type { SourceImage } from '@react-mono/models';
 
-export const SAMPLE_IMAGES: PickableImage[] = [
+export const SAMPLE_IMAGES: SourceImage[] = [
   {
     id: '1',
     url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=800&fit=crop&auto=format',

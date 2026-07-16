@@ -7,7 +7,7 @@ export interface Playlist {
   img: string;
 }
 
-export interface PickableImage {
+export interface SourceImage {
   id: string;
   url: string;
   thumbUrl: string;

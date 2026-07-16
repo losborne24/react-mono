@@ -1,12 +1,12 @@
 import { Download, Share2, RefreshCw } from 'lucide-react';
-import type { Playlist, PickableImage } from '@react-mono/models';
+import type { Playlist, SourceImage } from '@react-mono/models';
 import { MosaicGrid } from '@react-mono/spotify-mosaic-ui';
 
 const COLS = 22;
 const ROWS = 16;
 
 export interface MosaicProps {
-  image: PickableImage;
+  image: SourceImage;
   playlist: Playlist;
   playlists: Playlist[];
   onReset: () => void;

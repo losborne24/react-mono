@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Layers } from 'lucide-react';
-import type { Playlist, PickableImage } from '@react-mono/models';
+import type { Playlist, SourceImage } from '@react-mono/models';
 import { PLAYLISTS, SAMPLE_IMAGES } from '@react-mono/spotify-mosaic-data';
 import { StepIndicator } from '@react-mono/spotify-mosaic-ui';
 import {
@@ -13,7 +13,7 @@ import {
 export function App() {
   const [step, setStep] = useState(1);
   const [selectedPlaylist, setSelectedPlaylist] = useState<Playlist | null>(null);
-  const [selectedImage, setSelectedImage] = useState<PickableImage | null>(null);
+  const [selectedImage, setSelectedImage] = useState<SourceImage | null>(null);
   const [generating, setGenerating] = useState(false);
 
   const advance = (from: number) => setStep(from + 1);
