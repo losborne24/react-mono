@@ -251,12 +251,8 @@ export function useMosaifyWizard(): MosaifyWizard {
     connect,
     confirmPlaylist,
     confirmImage,
-    // Back is offered on every step past the first (connect).
     back: stepper.canBack ? back : undefined,
     reset,
     switchAccount,
   };
 }
-
-/** Re-exported so shells can wire a logout affordance. */
-export { logout };
