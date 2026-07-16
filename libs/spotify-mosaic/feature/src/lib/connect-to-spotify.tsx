@@ -45,10 +45,7 @@ export function ConnectToSpotify({ onConnect }: ConnectToSpotifyProps) {
         </div>
 
         <div className="flex flex-col gap-3 max-w-sm">
-          <h1
-            className="text-4xl font-bold text-foreground leading-tight"
-            style={{ fontFamily: "'Bricolage Grotesque', sans-serif" }}
-          >
+          <h1 className="font-display text-4xl font-bold text-foreground leading-tight">
             Turn your music into art
           </h1>
           <p className="text-muted-foreground text-base leading-relaxed">
@@ -64,7 +61,6 @@ export function ConnectToSpotify({ onConnect }: ConnectToSpotifyProps) {
           style={{
             background: loading ? 'rgba(29,185,84,0.6)' : '#1db954',
             color: '#000',
-            fontFamily: "'DM Sans', sans-serif",
           }}
         >
           {loading ? (

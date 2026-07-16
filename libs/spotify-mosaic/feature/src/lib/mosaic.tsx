@@ -25,10 +25,7 @@ export function Mosaic({ image, playlist, playlists, onReset }: MosaicProps) {
   return (
     <div className="flex flex-col flex-1 px-6 pb-12 max-w-3xl mx-auto w-full">
       <div className="mb-6">
-        <h2
-          className="text-2xl font-bold text-foreground mb-1"
-          style={{ fontFamily: "'Bricolage Grotesque', sans-serif" }}
-        >
+        <h2 className="font-display text-2xl font-bold text-foreground mb-1">
           Your mosaic
         </h2>
         <p className="text-muted-foreground text-sm">

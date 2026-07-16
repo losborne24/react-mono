@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 import type { Playlist, SourceImage } from '@react-mono/models';
+import { PLAYLISTS, SAMPLE_IMAGES } from '@react-mono/spotify-mosaic-data';
 
 export const WIZARD_STEPS = [
   'connect',
@@ -15,6 +16,8 @@ export interface MosaifyWizard {
   stepIndex: number;
   stepNumber: number;
   totalSteps: number;
+  playlists: Playlist[];
+  images: SourceImage[];
   selectedPlaylist: Playlist | null;
   selectedImage: SourceImage | null;
   canGoBack: boolean;
@@ -63,6 +66,8 @@ export function useMosaifyWizard(): MosaifyWizard {
     stepIndex,
     stepNumber: stepIndex + 1,
     totalSteps: WIZARD_STEPS.length,
+    playlists: PLAYLISTS,
+    images: SAMPLE_IMAGES,
     selectedPlaylist,
     selectedImage,
     canGoBack: stepIndex > 0,
