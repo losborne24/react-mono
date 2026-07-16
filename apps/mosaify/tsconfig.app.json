@@ -35,7 +35,16 @@
   "include": ["src/**/*.js", "src/**/*.jsx", "src/**/*.ts", "src/**/*.tsx"],
   "references": [
     {
+      "path": "../../libs/spotify-mosaic/ui/tsconfig.lib.json"
+    },
+    {
       "path": "../../libs/spotify-mosaic/feature/tsconfig.lib.json"
+    },
+    {
+      "path": "../../libs/spotify-mosaic/data/tsconfig.lib.json"
+    },
+    {
+      "path": "../../libs/shared/models/tsconfig.lib.json"
     }
   ]
 }
