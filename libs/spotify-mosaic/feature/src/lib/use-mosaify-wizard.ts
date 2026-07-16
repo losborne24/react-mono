@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { Playlist, SourceImage } from '@react-mono/models';
 import {
   SAMPLE_IMAGES,
@@ -13,12 +13,7 @@ import {
   logout,
 } from '@react-mono/spotify-mosaic-data';
 
-export const WIZARD_STEPS = [
-  'connect',
-  'playlist',
-  'image',
-  'mosaic',
-] as const;
+export const WIZARD_STEPS = ['connect', 'playlist', 'image', 'mosaic'] as const;
 
 export type WizardStep = (typeof WIZARD_STEPS)[number];
 
@@ -72,15 +67,11 @@ export interface MosaifyWizard {
 
 export function useMosaifyWizard(): MosaifyWizard {
   const [stepIndex, setStepIndex] = useState(0);
-  const [selectedPlaylist, setSelectedPlaylist] = useState<Playlist | null>(
-    null
-  );
+  const [selectedPlaylist, setSelectedPlaylist] = useState<Playlist | null>(null);
   const [selectedImage, setSelectedImage] = useState<SourceImage | null>(null);
 
   const configured = isSpotifyConfigured();
-  const [status, setStatus] = useState<AuthStatus>(
-    configured ? 'checking' : 'unauthenticated'
-  );
+  const [status, setStatus] = useState<AuthStatus>(configured ? 'checking' : 'unauthenticated');
   const [authError, setAuthError] = useState<string | null>(null);
   const [profile, setProfile] = useState<SpotifyProfile | null>(null);
 
@@ -99,7 +90,6 @@ export function useMosaifyWizard(): MosaifyWizard {
         if (cancelled) return;
         if (tokens || isLoggedIn()) {
           setStatus('authenticated');
-          setStepIndex(1); // skip the connect step once authenticated
         } else {
           setStatus('unauthenticated');
         }
@@ -150,42 +140,41 @@ export function useMosaifyWizard(): MosaifyWizard {
     };
   }, [status]);
 
-  const advance = useCallback(() => {
-    setStepIndex((i) => Math.min(i + 1, WIZARD_STEPS.length - 1));
-  }, []);
+  useEffect(() => {
+    if (status === 'authenticated') setStepIndex((i) => (i === 0 ? 1 : i));
+  }, [status]);
 
-  const back = useCallback(() => {
-    setStepIndex((i) => Math.max(i - 1, 0));
-  }, []);
+  const advance = () => {
+    setStepIndex((i) => {
+      if (i + 1 > WIZARD_STEPS.length - 1) {
+        console.warn('[mosaify-wizard] advance() called on last step; no-op.');
+        return i;
+      }
+      return i + 1;
+    });
+  };
 
-  const connect = useCallback(() => {
+  const connect = () => {
     if (!configured) return;
     beginLogin().catch((err) =>
-      setAuthError(err instanceof Error ? err.message : 'Sign-in failed.')
+      setAuthError(err instanceof Error ? err.message : 'Sign-in failed.'),
     );
-  }, [configured]);
+  };
 
-  const confirmPlaylist = useCallback(() => {
+  const confirmPlaylist = () => {
     if (!selectedPlaylist) return;
     advance();
     // Fetch the chosen playlist's album art to use as mosaic tiles.
     fetchPlaylistArtwork(selectedPlaylist.id)
       .then((art) => setTiles(art))
       .catch(() => setTiles([]));
-  }, [selectedPlaylist, advance]);
+  };
 
-  const confirmImage = useCallback(() => {
+  const confirmImage = () => {
     if (selectedImage) advance();
-  }, [selectedImage, advance]);
+  };
 
-  const reset = useCallback(() => {
-    setStepIndex(status === 'authenticated' ? 1 : 0);
-    setSelectedPlaylist(null);
-    setSelectedImage(null);
-    setTiles([]);
-  }, [status]);
-
-  const switchAccount = useCallback(() => {
+  const switchAccount = () => {
     logout();
     setStatus('unauthenticated');
     setProfile(null);
@@ -195,9 +184,27 @@ export function useMosaifyWizard(): MosaifyWizard {
     setTiles([]);
     setAuthError(null);
     setStepIndex(0);
-  }, []);
+  };
 
-  const step = WIZARD_STEPS[stepIndex];
+  const reset = () => {
+    // Start over at the first interactive step: playlist when signed in.
+    setStepIndex(status === 'authenticated' ? 1 : 0);
+    setSelectedPlaylist(null);
+    setSelectedImage(null);
+    setTiles([]);
+  };
+
+  const back = () => {
+    // Backing out of `playlist` (first post-auth step) signs out — same as
+    // "switch account". Deeper steps step back one.
+    if (status === 'authenticated' && stepIndex <= 1) {
+      switchAccount();
+      return;
+    }
+    setStepIndex((i) => Math.max(i - 1, 0));
+  };
+
+  const step = WIZARD_STEPS[Math.min(stepIndex, WIZARD_STEPS.length - 1)];
 
   const buildView = (): WizardView => {
     switch (step) {
@@ -226,10 +233,12 @@ export function useMosaifyWizard(): MosaifyWizard {
   return {
     step,
     view: buildView(),
-    stepNumber: stepIndex + 1,
+    // Absolute number so the 4-dot indicator shows Connect as done once
+    // authenticated, even though it's no longer part of `activeSteps`.
+    stepNumber: WIZARD_STEPS.indexOf(step) + 1,
     totalSteps: WIZARD_STEPS.length,
     profile,
-    canGoBack: stepIndex > (status === 'authenticated' ? 1 : 0),
+    canGoBack: stepIndex > 0,
     selectPlaylist: setSelectedPlaylist,
     selectImage: setSelectedImage,
     connect,
