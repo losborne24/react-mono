@@ -8,14 +8,14 @@ const ROWS = 16;
 export interface MosaicProps {
   image: SourceImage;
   playlist: Playlist;
-  /** Album artwork used as mosaic tiles. Falls back to the playlist cover. */
+  /** Album artwork used as mosaic tiles. */
   tiles: SourceImage[];
   onReset: () => void;
 }
 
 export function Mosaic({ image, playlist, tiles, onReset }: MosaicProps) {
   const total = COLS * ROWS;
-  const tileUrls = tiles.length ? tiles.map((t) => t.url) : [playlist.img];
+  const tileUrls = tiles.map((t) => t.url);
 
   const stats = [
     { label: 'Tiles', value: `${total.toLocaleString()}` },
