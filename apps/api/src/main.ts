@@ -1,12 +1,9 @@
 import express from 'express';
-import { ProductsService } from '@react-mono/api-products';
-import { ApiResponse, Product, ProductFilter, PaginatedResponse } from '@react-mono/models';
 
 const host = process.env.HOST ?? 'localhost';
 const port = process.env.PORT ? Number(process.env.PORT) : 3333;
 
 const app = express();
-const productsService = new ProductsService();
 
 // Middleware
 app.use(express.json());
