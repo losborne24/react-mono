@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   beginLogin,
@@ -39,30 +39,39 @@ export interface SpotifyAuth {
 export function useSpotifyAuth(): SpotifyAuth {
   const configured = isSpotifyConfigured();
   const queryClient = useQueryClient();
-  const [status, setStatus] = useState<AuthStatus>(configured ? 'checking' : 'unauthenticated');
-  const [error, setError] = useState<string | null>(null);
+  // Errors from the imperative connect() redirect kickoff; auth-resolution
+  // errors come from the session query below.
+  const [connectError, setConnectError] = useState<string | null>(null);
 
-  // On mount: resolve an OAuth redirect, or pick up an existing session.
-  useEffect(() => {
-    if (!configured) return;
-    let cancelled = false;
+  // Resolve an OAuth redirect (or pick up an existing session) on mount.
+  // Kept outside the 'spotify' key namespace so signOut's removeQueries can
+  // clear account data without also wiping — and refetching — the session.
+  const {
+    data: authenticated = false,
+    error: sessionError,
+    isPending: sessionPending,
+  } = useQuery({
+    queryKey: ['spotify-session'],
+    queryFn: async () => {
+      const tokens = await handleRedirectCallback();
+      return Boolean(tokens || isLoggedIn());
+    },
+    enabled: configured,
+    staleTime: Infinity,
+    retry: false,
+  });
 
-    (async () => {
-      try {
-        const tokens = await handleRedirectCallback();
-        if (cancelled) return;
-        setStatus(tokens || isLoggedIn() ? 'authenticated' : 'unauthenticated');
-      } catch (err) {
-        if (cancelled) return;
-        setError(err instanceof Error ? err.message : 'Sign-in failed.');
-        setStatus('unauthenticated');
-      }
-    })();
+  let status: AuthStatus = 'unauthenticated';
+  if (configured && sessionPending) status = 'checking';
+  else if (authenticated) status = 'authenticated';
 
-    return () => {
-      cancelled = true;
-    };
-  }, [configured]);
+  const error =
+    connectError ??
+    (sessionError
+      ? sessionError instanceof Error
+        ? sessionError.message
+        : 'Sign-in failed.'
+      : null);
 
   // Load the profile once authenticated. Never goes stale: the profile is
   // static for a session, so skip the default window-focus refetch. Cleared
@@ -76,14 +85,17 @@ export function useSpotifyAuth(): SpotifyAuth {
 
   const connect = () => {
     if (!configured) return;
-    beginLogin().catch((err) => setError(err instanceof Error ? err.message : 'Sign-in failed.'));
+    beginLogin().catch((err) =>
+      setConnectError(err instanceof Error ? err.message : 'Sign-in failed.'),
+    );
   };
 
   const signOut = () => {
     logout();
-    setStatus('unauthenticated');
-    setError(null);
-    // Drop cached Spotify data so a re-login can't show the prior account's.
+    setConnectError(null);
+    // Flip the session to unauthenticated without a refetch, and drop cached
+    // Spotify data so a re-login can't show the prior account's.
+    queryClient.setQueryData(['spotify-session'], false);
     queryClient.removeQueries({ queryKey: ['spotify'] });
   };
 
