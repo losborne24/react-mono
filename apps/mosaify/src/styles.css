@@ -3,9 +3,11 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 
-/* Scan workspace libraries consumed by this app for Tailwind classes */
-@source '../../../libs/spotify-mosaic';
-@source '../../../libs/shared/ui';
+/* Scan workspace libraries consumed by this app for Tailwind classes.
+   Resolved by package name via node_modules — survives lib moves. */
+@source '@react-mono/spotify-mosaic-ui';
+@source '@react-mono/spotify-mosaic-feature';
+@source '@react-mono/shared-ui';
 
 @custom-variant dark (&:is(.dark *));
 
