@@ -60,7 +60,8 @@ sequenceDiagram
 | `client.ts` | `spotifyGet` — Bearer header, 401 → logout |
 | `config.ts` | `SPOTIFY_CONFIG` (clientId, redirectUri, scopes, URLs) |
 | `endpoints.ts` | `/me`, `/me/playlists`, playlist artwork |
-| `../../feature/src/lib/use-mosaify-wizard.ts` | Orchestration (connect, callback effect, fetches) |
+| `../../feature/src/lib/use-spotify-auth.ts` | Auth orchestration (connect, callback effect, signOut, profile fetch) |
+| `../../feature/src/lib/use-mosaify-wizard.ts` | Wizard flow; consumes `useSpotifyAuth`, fetches playlists/artwork |
 
 ## sessionStorage keys
 
