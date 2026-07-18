@@ -22,13 +22,13 @@
       "path": "./apps/mosaify"
     },
     {
-      "path": "./libs/spotify-mosaic/feature"
+      "path": "./libs/mosaify/feature"
     },
     {
-      "path": "./libs/spotify-mosaic/ui"
+      "path": "./libs/mosaify/ui"
     },
     {
-      "path": "./libs/spotify-mosaic/data"
+      "path": "./libs/mosaify/data"
     },
     {
       "path": "./libs/shared/ui"

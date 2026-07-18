@@ -1,5 +1,5 @@
 {
-  "name": "@react-mono/spotify-mosaic-feature",
+  "name": "@react-mono/mosaify-feature",
   "version": "0.0.1",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
@@ -13,15 +13,15 @@
   },
   "nx": {
     "tags": [
-      "scope:spotify-mosaic",
+      "scope:mosaify",
       "type:feature"
     ]
   },
   "dependencies": {
     "@react-mono/models": "*",
     "@react-mono/shared-ui": "*",
-    "@react-mono/spotify-mosaic-data": "*",
-    "@react-mono/spotify-mosaic-ui": "*",
+    "@react-mono/mosaify-data": "*",
+    "@react-mono/mosaify-ui": "*",
     "@tabler/icons-react": "*"
   }
 }

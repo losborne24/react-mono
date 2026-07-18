@@ -1,5 +1,5 @@
 {
-  "name": "@react-mono/spotify-mosaic-data",
+  "name": "@react-mono/mosaify-data",
   "version": "0.0.1",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
@@ -13,7 +13,7 @@
   },
   "nx": {
     "tags": [
-      "scope:spotify-mosaic",
+      "scope:mosaify",
       "type:data"
     ]
   },

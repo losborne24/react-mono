@@ -1,6 +1,6 @@
 import { IconChevronRight } from '@tabler/icons-react';
 import type { Playlist } from '@react-mono/models';
-import { PlaylistCard } from '@react-mono/spotify-mosaic-ui';
+import { PlaylistCard } from '@react-mono/mosaify-ui';
 import { Loading } from '@react-mono/shared-ui';
 
 export interface SelectPlaylistProps {

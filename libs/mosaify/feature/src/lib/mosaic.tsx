@@ -1,6 +1,6 @@
 import { IconDownload, IconShare2, IconRefresh } from '@tabler/icons-react';
 import type { Playlist, SourceImage } from '@react-mono/models';
-import { MosaicGrid } from '@react-mono/spotify-mosaic-ui';
+import { MosaicGrid } from '@react-mono/mosaify-ui';
 
 const COLS = 22;
 const ROWS = 16;

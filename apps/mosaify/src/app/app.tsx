@@ -1,6 +1,6 @@
 import { IconLayoutCollage } from '@tabler/icons-react';
 import { Button } from '@react-mono/shared-ui';
-import { WizardLayout } from '@react-mono/spotify-mosaic-ui';
+import { WizardLayout } from '@react-mono/mosaify-ui';
 import {
   ConnectToSpotify,
   SelectPlaylist,
@@ -8,7 +8,7 @@ import {
   Mosaic,
   useMosaifyWizard,
   WIZARD_STEP_INDICATORS,
-} from '@react-mono/spotify-mosaic-feature';
+} from '@react-mono/mosaify-feature';
 
 function Brand() {
   return (

@@ -12,7 +12,7 @@ import {
   isLoggedIn,
   isSpotifyConfigured,
   logout,
-} from '@react-mono/spotify-mosaic-data';
+} from '@react-mono/mosaify-data';
 
 /**
  * Canonical wizard step definitions — single source of truth for step ids,

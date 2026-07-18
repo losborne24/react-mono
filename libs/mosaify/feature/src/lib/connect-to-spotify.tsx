@@ -1,5 +1,5 @@
 import { IconLayoutCollage, IconAlertTriangle } from '@tabler/icons-react';
-import { SpotifyLogo } from '@react-mono/spotify-mosaic-ui';
+import { SpotifyLogo } from '@react-mono/mosaify-ui';
 import { Loading } from '@react-mono/shared-ui';
 import type { AuthStatus } from './use-mosaify-wizard';
 
