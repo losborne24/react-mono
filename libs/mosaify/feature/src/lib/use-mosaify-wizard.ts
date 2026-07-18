@@ -3,16 +3,14 @@ import { useStepper, type StepperStep } from '@react-mono/shared-ui';
 import type { Playlist, SourceImage } from '@react-mono/models';
 import {
   SAMPLE_IMAGES,
-  beginLogin,
-  fetchCurrentUser,
   fetchFeaturedPlaylists,
   fetchPlaylistArtwork,
   fetchUserPlaylists,
-  handleRedirectCallback,
-  isLoggedIn,
-  isSpotifyConfigured,
-  logout,
 } from '@react-mono/mosaify-data';
+import { useSpotifyAuth } from './use-spotify-auth';
+import type { AuthStatus, SpotifyProfile } from './use-spotify-auth';
+
+export type { AuthStatus, SpotifyProfile } from './use-spotify-auth';
 
 /**
  * Canonical wizard step definitions — single source of truth for step ids,
@@ -34,16 +32,6 @@ export type WizardStep = (typeof WIZARD_STEPS)[number];
 export const WIZARD_STEP_INDICATORS: StepperStep[] = WIZARD_STEP_DEFS.map((s) => ({
   label: s.label,
 }));
-
-export type AuthStatus =
-  | 'checking' // resolving an OAuth redirect / existing session
-  | 'unauthenticated'
-  | 'authenticated';
-
-export interface SpotifyProfile {
-  name: string;
-  avatar: string | null;
-}
 
 /**
  * Render-ready view of the current step. The `mosaic` variant guarantees
@@ -88,40 +76,12 @@ export function useMosaifyWizard(): MosaifyWizard {
   const [selectedPlaylist, setSelectedPlaylist] = useState<Playlist | null>(null);
   const [selectedImage, setSelectedImage] = useState<SourceImage | null>(null);
 
-  const configured = isSpotifyConfigured();
-  const [status, setStatus] = useState<AuthStatus>(configured ? 'checking' : 'unauthenticated');
-  const [authError, setAuthError] = useState<string | null>(null);
-  const [profile, setProfile] = useState<SpotifyProfile | null>(null);
+  const auth = useSpotifyAuth();
+  const { configured, status, profile } = auth;
 
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [playlistsLoading, setPlaylistsLoading] = useState(false);
   const [tiles, setTiles] = useState<SourceImage[]>([]);
-
-  // On mount: resolve an OAuth redirect, or pick up an existing session.
-  useEffect(() => {
-    if (!configured) return;
-    let cancelled = false;
-
-    (async () => {
-      try {
-        const tokens = await handleRedirectCallback();
-        if (cancelled) return;
-        if (tokens || isLoggedIn()) {
-          setStatus('authenticated');
-        } else {
-          setStatus('unauthenticated');
-        }
-      } catch (err) {
-        if (cancelled) return;
-        setAuthError(err instanceof Error ? err.message : 'Sign-in failed.');
-        setStatus('unauthenticated');
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [configured]);
 
   // Load playlists once authenticated.
   useEffect(() => {
@@ -131,13 +91,11 @@ export function useMosaifyWizard(): MosaifyWizard {
 
     (async () => {
       try {
-        const [me, mine, featured] = await Promise.all([
-          fetchCurrentUser(),
+        const [mine, featured] = await Promise.all([
           fetchUserPlaylists(),
           fetchFeaturedPlaylists(),
         ]);
         if (cancelled) return;
-        setProfile(me);
         // User's own playlists first, then curated; dedupe by id.
         const seen = new Set<string>();
         const merged = [...mine, ...featured].filter((p) => {
@@ -162,13 +120,6 @@ export function useMosaifyWizard(): MosaifyWizard {
     if (status === 'authenticated' && stepper.index === 0) stepper.goTo(1);
   }, [status, stepper]);
 
-  const connect = () => {
-    if (!configured) return;
-    beginLogin().catch((err) =>
-      setAuthError(err instanceof Error ? err.message : 'Sign-in failed.'),
-    );
-  };
-
   const confirmPlaylist = () => {
     if (!selectedPlaylist) return;
     stepper.next();
@@ -183,14 +134,11 @@ export function useMosaifyWizard(): MosaifyWizard {
   };
 
   const switchAccount = () => {
-    logout();
-    setStatus('unauthenticated');
-    setProfile(null);
+    auth.signOut();
     setPlaylists([]);
     setSelectedPlaylist(null);
     setSelectedImage(null);
     setTiles([]);
-    setAuthError(null);
     stepper.goTo(0);
   };
 
@@ -236,7 +184,7 @@ export function useMosaifyWizard(): MosaifyWizard {
         throw new Error('[mosaify] reached `mosaic` step without selections');
       case 'connect':
       default:
-        return { step: 'connect', status, configured, error: authError };
+        return { step: 'connect', status, configured, error: auth.error };
     }
   };
 
@@ -248,7 +196,7 @@ export function useMosaifyWizard(): MosaifyWizard {
     profile,
     selectPlaylist: setSelectedPlaylist,
     selectImage: setSelectedImage,
-    connect,
+    connect: auth.connect,
     confirmPlaylist,
     confirmImage,
     back: stepper.canBack ? back : undefined,
