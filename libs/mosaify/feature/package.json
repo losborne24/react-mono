@@ -22,6 +22,7 @@
     "@react-mono/shared-ui": "*",
     "@react-mono/mosaify-data": "*",
     "@react-mono/mosaify-ui": "*",
-    "@tabler/icons-react": "*"
+    "@tabler/icons-react": "*",
+    "@tanstack/react-query": "*"
   }
 }

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   beginLogin,
   fetchCurrentUser,
@@ -37,9 +38,9 @@ export interface SpotifyAuth {
  */
 export function useSpotifyAuth(): SpotifyAuth {
   const configured = isSpotifyConfigured();
+  const queryClient = useQueryClient();
   const [status, setStatus] = useState<AuthStatus>(configured ? 'checking' : 'unauthenticated');
   const [error, setError] = useState<string | null>(null);
-  const [profile, setProfile] = useState<SpotifyProfile | null>(null);
 
   // On mount: resolve an OAuth redirect, or pick up an existing session.
   useEffect(() => {
@@ -63,24 +64,15 @@ export function useSpotifyAuth(): SpotifyAuth {
     };
   }, [configured]);
 
-  // Load the profile once authenticated.
-  useEffect(() => {
-    if (status !== 'authenticated') return;
-    let cancelled = false;
-
-    (async () => {
-      try {
-        const me = await fetchCurrentUser();
-        if (!cancelled) setProfile(me);
-      } catch {
-        if (!cancelled) setProfile(null);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [status]);
+  // Load the profile once authenticated. Never goes stale: the profile is
+  // static for a session, so skip the default window-focus refetch. Cleared
+  // on signOut via removeQueries.
+  const { data: profile = null } = useQuery({
+    queryKey: ['spotify', 'me'],
+    queryFn: fetchCurrentUser,
+    enabled: status === 'authenticated',
+    staleTime: Infinity,
+  });
 
   const connect = () => {
     if (!configured) return;
@@ -90,8 +82,9 @@ export function useSpotifyAuth(): SpotifyAuth {
   const signOut = () => {
     logout();
     setStatus('unauthenticated');
-    setProfile(null);
     setError(null);
+    // Drop cached Spotify data so a re-login can't show the prior account's.
+    queryClient.removeQueries({ queryKey: ['spotify'] });
   };
 
   return { configured, status, error, profile, connect, signOut };

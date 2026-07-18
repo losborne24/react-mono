@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useStepper, type StepperStep } from '@react-mono/shared-ui';
 import type { Playlist, SourceImage } from '@react-mono/models';
 import {
@@ -79,42 +80,30 @@ export function useMosaifyWizard(): MosaifyWizard {
   const auth = useSpotifyAuth();
   const { configured, status, profile } = auth;
 
-  const [playlists, setPlaylists] = useState<Playlist[]>([]);
-  const [playlistsLoading, setPlaylistsLoading] = useState(false);
-  const [tiles, setTiles] = useState<SourceImage[]>([]);
+  // Load playlists once authenticated: user's own first, then curated, deduped.
+  const { data: playlists = [], isPending: playlistsPending } = useQuery({
+    queryKey: ['spotify', 'playlists'],
+    enabled: status === 'authenticated',
+    queryFn: async () => {
+      const [mine, featured] = await Promise.all([fetchUserPlaylists(), fetchFeaturedPlaylists()]);
+      const seen = new Set<string>();
+      return [...mine, ...featured].filter((p) => {
+        if (seen.has(p.id)) return false;
+        seen.add(p.id);
+        return true;
+      });
+    },
+  });
+  // `isPending` is true even when disabled; only surface loading while authed.
+  const playlistsLoading = status === 'authenticated' && playlistsPending;
 
-  // Load playlists once authenticated.
-  useEffect(() => {
-    if (status !== 'authenticated') return;
-    let cancelled = false;
-    setPlaylistsLoading(true);
-
-    (async () => {
-      try {
-        const [mine, featured] = await Promise.all([
-          fetchUserPlaylists(),
-          fetchFeaturedPlaylists(),
-        ]);
-        if (cancelled) return;
-        // User's own playlists first, then curated; dedupe by id.
-        const seen = new Set<string>();
-        const merged = [...mine, ...featured].filter((p) => {
-          if (seen.has(p.id)) return false;
-          seen.add(p.id);
-          return true;
-        });
-        setPlaylists(merged);
-      } catch {
-        if (!cancelled) setPlaylists([]);
-      } finally {
-        if (!cancelled) setPlaylistsLoading(false);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [status]);
+  // Album art for the chosen playlist — the mosaic tiles. Fetched on selection.
+  const selectedPlaylistId = selectedPlaylist?.id;
+  const { data: tiles = [] } = useQuery({
+    queryKey: ['spotify', 'artwork', selectedPlaylistId],
+    enabled: !!selectedPlaylistId,
+    queryFn: () => fetchPlaylistArtwork(selectedPlaylistId as string),
+  });
 
   useEffect(() => {
     if (status === 'authenticated' && stepper.index === 0) stepper.goTo(1);
@@ -122,11 +111,8 @@ export function useMosaifyWizard(): MosaifyWizard {
 
   const confirmPlaylist = () => {
     if (!selectedPlaylist) return;
+    // Artwork is fetched by the `tiles` query, keyed on the selected playlist.
     stepper.next();
-    // Fetch the chosen playlist's album art to use as mosaic tiles.
-    fetchPlaylistArtwork(selectedPlaylist.id)
-      .then((art) => setTiles(art))
-      .catch(() => setTiles([]));
   };
 
   const confirmImage = () => {
@@ -135,10 +121,8 @@ export function useMosaifyWizard(): MosaifyWizard {
 
   const switchAccount = () => {
     auth.signOut();
-    setPlaylists([]);
     setSelectedPlaylist(null);
     setSelectedImage(null);
-    setTiles([]);
     stepper.goTo(0);
   };
 
@@ -147,7 +131,6 @@ export function useMosaifyWizard(): MosaifyWizard {
     stepper.goTo(status === 'authenticated' ? 1 : 0);
     setSelectedPlaylist(null);
     setSelectedImage(null);
-    setTiles([]);
   };
 
   const back = () => {
