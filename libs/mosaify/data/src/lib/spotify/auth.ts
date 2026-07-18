@@ -1,9 +1,5 @@
 import { SPOTIFY_CONFIG } from './config';
-import {
-  deriveCodeChallenge,
-  generateCodeVerifier,
-  generateState,
-} from './pkce';
+import { deriveCodeChallenge, generateCodeVerifier, generateState } from './pkce';
 
 /**
  * Authorization Code + PKCE flow for a browser SPA. Client ID only — no secret.

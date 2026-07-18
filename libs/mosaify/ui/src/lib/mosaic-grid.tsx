@@ -9,12 +9,7 @@ export interface MosaicGridProps {
 }
 
 // Artwork tiled with the target image blended over for color fidelity.
-export function MosaicGrid({
-  image,
-  tileUrls,
-  cols = 22,
-  rows = 16,
-}: MosaicGridProps) {
+export function MosaicGrid({ image, tileUrls, cols = 22, rows = 16 }: MosaicGridProps) {
   const total = cols * rows;
   const source = tileUrls.length ? tileUrls : [''];
 
@@ -36,14 +31,7 @@ export function MosaicGrid({
       >
         {tiles.map((url, i) => (
           <div key={i} className="overflow-hidden bg-muted">
-            {url && (
-              <img
-                src={url}
-                alt=""
-                className="w-full h-full object-cover"
-                loading="lazy"
-              />
-            )}
+            {url && <img src={url} alt="" className="w-full h-full object-cover" loading="lazy" />}
           </div>
         ))}
       </div>
@@ -58,8 +46,7 @@ export function MosaicGrid({
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
-          background:
-            'radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.4) 100%)',
+          background: 'radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.4) 100%)',
         }}
       />
     </div>

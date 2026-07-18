@@ -11,8 +11,7 @@ function base64UrlEncode(bytes: Uint8Array): string {
 
 /** Random high-entropy verifier (43–128 chars). */
 export function generateCodeVerifier(length = 64): string {
-  const charset =
-    'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
+  const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
   const values = crypto.getRandomValues(new Uint8Array(length));
   return Array.from(values, (v) => charset[v % charset.length]).join('');
 }

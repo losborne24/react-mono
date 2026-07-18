@@ -27,9 +27,7 @@ export function Mosaic({ image, playlist, tiles, onReset }: MosaicProps) {
   return (
     <div className="flex flex-col flex-1 px-6 pb-12 max-w-3xl mx-auto w-full">
       <div className="mb-6">
-        <h2 className="font-display text-2xl font-bold text-foreground mb-1">
-          Your mosaic
-        </h2>
+        <h2 className="font-display text-2xl font-bold text-foreground mb-1">Your mosaic</h2>
         <p className="text-muted-foreground text-sm">
           {image.label} · recreated from{' '}
           <span className="text-foreground/80">{playlist.title}</span> artwork
@@ -48,9 +46,7 @@ export function Mosaic({ image, playlist, tiles, onReset }: MosaicProps) {
             <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-medium">
               {stat.label}
             </span>
-            <span className="text-sm font-semibold text-foreground">
-              {stat.value}
-            </span>
+            <span className="text-sm font-semibold text-foreground">{stat.value}</span>
           </div>
         ))}
       </div>

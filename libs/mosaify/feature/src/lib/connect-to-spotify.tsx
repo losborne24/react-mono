@@ -29,8 +29,7 @@ export function ConnectToSpotify({
       <div
         className="absolute w-96 h-96 rounded-full pointer-events-none"
         style={{
-          background:
-            'radial-gradient(circle, rgba(29,185,84,0.12) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, rgba(29,185,84,0.12) 0%, transparent 70%)',
           transform: 'translate(-50%, -50%)',
           left: '50%',
           top: '50%',
@@ -54,8 +53,7 @@ export function ConnectToSpotify({
             Turn your music into art
           </h1>
           <p className="text-muted-foreground text-base leading-relaxed">
-            Connect your Spotify account to build stunning photo mosaics from
-            your playlist artwork.
+            Connect your Spotify account to build stunning photo mosaics from your playlist artwork.
           </p>
         </div>
 
@@ -70,9 +68,7 @@ export function ConnectToSpotify({
           </div>
         )}
 
-        {error && (
-          <p className="text-sm text-destructive max-w-sm">{error}</p>
-        )}
+        {error && <p className="text-sm text-destructive max-w-sm">{error}</p>}
 
         <button
           onClick={onConnect}
@@ -91,8 +87,7 @@ export function ConnectToSpotify({
         </button>
 
         <p className="text-xs text-muted-foreground max-w-xs">
-          We only read your playlists and profile name — we never post on your
-          behalf.
+          We only read your playlists and profile name — we never post on your behalf.
         </p>
       </div>
     </div>

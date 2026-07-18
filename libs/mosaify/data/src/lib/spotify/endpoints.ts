@@ -38,7 +38,7 @@ export async function fetchCurrentUser(): Promise<{
 /** The user's own playlists. Primary, reliable data source. */
 export async function fetchUserPlaylists(limit = 50): Promise<Playlist[]> {
   const page = await spotifyGet<SpotifyPaged<SpotifyPlaylistSummary>>(
-    `/me/playlists?limit=${limit}`
+    `/me/playlists?limit=${limit}`,
   );
   return page.items.filter(Boolean).map(toPlaylist);
 }
@@ -65,10 +65,10 @@ export async function fetchFeaturedPlaylists(limit = 8): Promise<Playlist[]> {
  */
 export async function fetchPlaylistArtwork(
   playlistId: string,
-  limit = 100
+  limit = 100,
 ): Promise<SourceImage[]> {
   const page = await spotifyGet<SpotifyPaged<SpotifyPlaylistTrack>>(
-    `/playlists/${playlistId}/tracks?limit=${limit}&fields=items(track(album(images)))`
+    `/playlists/${playlistId}/tracks?limit=${limit}&fields=items(track(album(images)))`,
   );
 
   const seen = new Set<string>();

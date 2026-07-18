@@ -36,9 +36,7 @@ export function PlaylistCard({ playlist, selected, onSelect }: PlaylistCardProps
         <p className="text-xs font-semibold text-foreground truncate leading-tight">
           {playlist.title}
         </p>
-        <p className="text-[11px] text-muted-foreground truncate">
-          {playlist.artist}
-        </p>
+        <p className="text-[11px] text-muted-foreground truncate">{playlist.artist}</p>
         <p className="text-[10px] text-muted-foreground/60 mt-0.5">
           {playlist.year ? `${playlist.year} · ` : ''}
           {playlist.tracks} tracks
