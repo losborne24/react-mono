@@ -1,6 +1,6 @@
 import { IconLayoutCollage, IconAlertTriangle } from '@tabler/icons-react';
 import { SpotifyLogo } from '@react-mono/mosaify-ui';
-import { Loading } from '@react-mono/shared-ui';
+import { Loading, Button } from '@react-mono/shared-ui';
 import type { AuthStatus } from './use-mosaify-wizard';
 
 export interface ConnectToSpotifyProps {
@@ -70,10 +70,10 @@ export function ConnectToSpotify({
 
         {error && <p className="text-sm text-destructive max-w-sm">{error}</p>}
 
-        <button
+        <Button
           onClick={onConnect}
           disabled={checking || !configured}
-          className="flex items-center gap-3 px-8 py-4 rounded-xl font-semibold text-base transition-all duration-200 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+          className="gap-3 px-8 py-4 h-auto rounded-xl font-semibold text-base"
           style={{ background: '#1db954', color: '#000' }}
         >
           {checking ? (
@@ -84,7 +84,7 @@ export function ConnectToSpotify({
               Connect with Spotify
             </>
           )}
-        </button>
+        </Button>
 
         <p className="text-xs text-muted-foreground max-w-xs">
           We only read your playlists and profile name — we never post on your behalf.
