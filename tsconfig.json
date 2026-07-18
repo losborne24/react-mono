@@ -7,9 +7,6 @@
       "path": "./apps/api"
     },
     {
-      "path": "./libs/api/products"
-    },
-    {
       "path": "./libs/shared/models"
     },
     {
