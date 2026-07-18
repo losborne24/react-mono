@@ -80,7 +80,6 @@
   },
   "workspaces": [
     "apps/*",
-    "libs/api/products",
     "libs/shared/*",
     "libs/mosaify/*"
   ]
