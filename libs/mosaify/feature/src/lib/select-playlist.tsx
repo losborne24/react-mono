@@ -1,4 +1,4 @@
-import { IconChevronRight } from '@tabler/icons-react';
+import { IconChevronRight, IconSearch, IconX } from '@tabler/icons-react';
 import type { Playlist } from '@react-mono/models';
 import { PlaylistCard } from '@react-mono/mosaify-ui';
 import { Loading } from '@react-mono/shared-ui';
@@ -8,6 +8,10 @@ export interface SelectPlaylistProps {
   selected: Playlist | null;
   onSelect: (playlist: Playlist) => void;
   onNext: () => void;
+  /** Current search query. */
+  search: string;
+  /** Called as the user types in the search box. */
+  onSearchChange: (query: string) => void;
   /** True while playlists are being fetched from Spotify. */
   loading?: boolean;
 }
@@ -17,8 +21,15 @@ export function SelectPlaylist({
   selected,
   onSelect,
   onNext,
+  search,
+  onSearchChange,
   loading = false,
 }: SelectPlaylistProps) {
+  const searching = search.trim().length > 0;
+  const emptyLabel = searching
+    ? `No playlists match “${search.trim()}”.`
+    : 'No playlists found on your account.';
+
   return (
     <div className="flex flex-col flex-1 px-6 pb-12 max-w-3xl mx-auto w-full">
       <div className="mb-6">
@@ -28,14 +39,39 @@ export function SelectPlaylist({
         </p>
       </div>
 
+      {/* Search */}
+      <div className="relative mb-6">
+        <IconSearch
+          size={16}
+          className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
+        />
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => onSearchChange(e.target.value)}
+          placeholder="Search Spotify playlists, or paste a playlist link"
+          className="w-full rounded-xl bg-muted/50 border border-border pl-9 pr-9 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+        />
+        {searching && (
+          <button
+            type="button"
+            onClick={() => onSearchChange('')}
+            aria-label="Clear search"
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+          >
+            <IconX size={16} />
+          </button>
+        )}
+      </div>
+
       {/* Playlist grid */}
       {loading ? (
         <div className="flex items-center justify-center flex-1 py-16">
-          <Loading label="Loading your playlists…" size={20} />
+          <Loading label={searching ? 'Searching…' : 'Loading your playlists…'} size={20} />
         </div>
       ) : playlists.length === 0 ? (
         <div className="flex items-center justify-center flex-1 py-16">
-          <p className="text-sm text-muted-foreground">No playlists found on your account.</p>
+          <p className="text-sm text-muted-foreground">{emptyLabel}</p>
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mb-8">

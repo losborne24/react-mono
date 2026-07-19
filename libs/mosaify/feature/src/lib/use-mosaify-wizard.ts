@@ -4,7 +4,8 @@ import { useStepper, type StepperStep } from '@react-mono/shared-ui';
 import type { Playlist, SourceImage } from '@react-mono/models';
 import {
   SAMPLE_IMAGES,
-  fetchFeaturedPlaylists,
+  fetchPlaylist,
+  fetchSearchPlaylists,
   fetchPlaylistArtwork,
   fetchUserPlaylists,
 } from '@react-mono/mosaify-data';
@@ -29,6 +30,74 @@ export const WIZARD_STEPS = WIZARD_STEP_DEFS.map((s) => s.id);
 
 export type WizardStep = (typeof WIZARD_STEPS)[number];
 
+/**
+ * Extract a Spotify playlist id from a raw id, URL, or `spotify:` URI.
+ * Returns null when the input isn't a recognisable playlist reference.
+ */
+function extractPlaylistId(input: string): string | null {
+  const trimmed = input.trim();
+  const fromUrl = trimmed.match(/playlist[/:]([a-zA-Z0-9]+)/);
+  if (fromUrl) return fromUrl[1];
+  // A bare base62 id (Spotify ids are 22 chars, but stay lenient).
+  if (/^[a-zA-Z0-9]{22}$/.test(trimmed)) return trimmed;
+  return null;
+}
+
+/**
+ * The playlist grid: the user's own playlists by default, replaced by search
+ * results (with any direct URL/id hit pinned first) once they type a query.
+ */
+function usePlaylistBrowser(
+  status: AuthStatus,
+  debouncedSearch: string,
+): { playlists: Playlist[]; loading: boolean } {
+  const authed = status === 'authenticated';
+
+  // The user's own playlists — the default listing before any search.
+  const { data: mine = [], isPending: minePending } = useQuery({
+    queryKey: ['spotify', 'playlists', 'mine'],
+    enabled: authed,
+    queryFn: () => fetchUserPlaylists(),
+  });
+
+  // Public playlists matching the search box. Only runs with a non-empty query.
+  const trimmedSearch = debouncedSearch.trim();
+  const { data: found = [], isFetching: searchFetching } = useQuery({
+    queryKey: ['spotify', 'playlists', 'search', trimmedSearch],
+    enabled: authed && trimmedSearch.length > 0,
+    queryFn: () => fetchSearchPlaylists(trimmedSearch),
+  });
+
+  // If the query is (or contains) a playlist URL/id, resolve that one directly
+  // — it may be private or unlisted and never surface via text search.
+  const directId = extractPlaylistId(trimmedSearch);
+  const { data: direct = null } = useQuery({
+    queryKey: ['spotify', 'playlist', directId],
+    enabled: authed && !!directId,
+    queryFn: () => fetchPlaylist(directId as string),
+  });
+
+  // Search results take over the grid when the user is searching; otherwise
+  // show their own playlists. A direct id-hit is pinned first, deduped.
+  const searchResults =
+    direct && !found.some((p) => p.id === direct.id) ? [direct, ...found] : found;
+  const playlists = trimmedSearch.length > 0 ? searchResults : mine;
+  // `isPending` is true even when disabled; only surface loading while authed.
+  const loading = authed && (trimmedSearch.length > 0 ? searchFetching : minePending);
+
+  return { playlists, loading };
+}
+
+/** Debounce a rapidly-changing value; returns the last value after `ms` idle. */
+function useDebounced<T>(value: T, ms: number): T {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const id = setTimeout(() => setDebounced(value), ms);
+    return () => clearTimeout(id);
+  }, [value, ms]);
+  return debounced;
+}
+
 /** Display steps for the UI `WizardLayout` / `Stepper`. */
 export const WIZARD_STEP_INDICATORS: StepperStep[] = WIZARD_STEP_DEFS.map((s) => ({
   label: s.label,
@@ -45,6 +114,7 @@ export type WizardView =
       playlists: Playlist[];
       selected: Playlist | null;
       loading: boolean;
+      search: string;
     }
   | { step: 'image'; images: SourceImage[]; selected: SourceImage | null }
   | {
@@ -61,6 +131,7 @@ export interface MosaifyWizard {
   totalSteps: number;
   profile: SpotifyProfile | null;
   selectPlaylist: (playlist: Playlist | null) => void;
+  setPlaylistSearch: (query: string) => void;
   selectImage: (image: SourceImage | null) => void;
   connect: () => void;
   confirmPlaylist: () => void;
@@ -76,26 +147,13 @@ export function useMosaifyWizard(): MosaifyWizard {
   const stepper = useStepper({ count: WIZARD_STEPS.length });
   const [selectedPlaylist, setSelectedPlaylist] = useState<Playlist | null>(null);
   const [selectedImage, setSelectedImage] = useState<SourceImage | null>(null);
+  const [search, setSearch] = useState('');
+  const debouncedSearch = useDebounced(search, 350);
 
   const auth = useSpotifyAuth();
   const { configured, status, profile } = auth;
 
-  // Load playlists once authenticated: user's own first, then curated, deduped.
-  const { data: playlists = [], isPending: playlistsPending } = useQuery({
-    queryKey: ['spotify', 'playlists'],
-    enabled: status === 'authenticated',
-    queryFn: async () => {
-      const [mine, featured] = await Promise.all([fetchUserPlaylists(), fetchFeaturedPlaylists()]);
-      const seen = new Set<string>();
-      return [...mine, ...featured].filter((p) => {
-        if (seen.has(p.id)) return false;
-        seen.add(p.id);
-        return true;
-      });
-    },
-  });
-  // `isPending` is true even when disabled; only surface loading while authed.
-  const playlistsLoading = status === 'authenticated' && playlistsPending;
+  const { playlists, loading: playlistsLoading } = usePlaylistBrowser(status, debouncedSearch);
 
   // Album art for the chosen playlist — the mosaic tiles. Fetched on selection.
   const selectedPlaylistId = selectedPlaylist?.id;
@@ -123,6 +181,7 @@ export function useMosaifyWizard(): MosaifyWizard {
     auth.signOut();
     setSelectedPlaylist(null);
     setSelectedImage(null);
+    setSearch('');
     stepper.goTo(0);
   };
 
@@ -131,6 +190,7 @@ export function useMosaifyWizard(): MosaifyWizard {
     stepper.goTo(status === 'authenticated' ? 1 : 0);
     setSelectedPlaylist(null);
     setSelectedImage(null);
+    setSearch('');
   };
 
   const back = () => {
@@ -153,6 +213,7 @@ export function useMosaifyWizard(): MosaifyWizard {
           playlists,
           selected: selectedPlaylist,
           loading: playlistsLoading,
+          search,
         };
       case 'image':
         return { step, images: SAMPLE_IMAGES, selected: selectedImage };
@@ -178,6 +239,7 @@ export function useMosaifyWizard(): MosaifyWizard {
     totalSteps: WIZARD_STEPS.length,
     profile,
     selectPlaylist: setSelectedPlaylist,
+    setPlaylistSearch: setSearch,
     selectImage: setSelectedImage,
     connect: auth.connect,
     confirmPlaylist,

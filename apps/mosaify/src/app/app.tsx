@@ -51,7 +51,13 @@ function BackgroundTexture() {
 
 type WizardHandlers = Pick<
   ReturnType<typeof useMosaifyWizard>,
-  'selectPlaylist' | 'selectImage' | 'connect' | 'confirmPlaylist' | 'confirmImage' | 'reset'
+  | 'selectPlaylist'
+  | 'setPlaylistSearch'
+  | 'selectImage'
+  | 'connect'
+  | 'confirmPlaylist'
+  | 'confirmImage'
+  | 'reset'
 >;
 
 function WizardContent({
@@ -77,6 +83,8 @@ function WizardContent({
           playlists={view.playlists}
           selected={view.selected}
           loading={view.loading}
+          search={view.search}
+          onSearchChange={handlers.setPlaylistSearch}
           onSelect={handlers.selectPlaylist}
           onNext={handlers.confirmPlaylist}
         />
@@ -110,6 +118,7 @@ export function App() {
     stepNumber,
     profile,
     selectPlaylist,
+    setPlaylistSearch,
     selectImage,
     connect,
     confirmPlaylist,
@@ -119,7 +128,15 @@ export function App() {
     switchAccount,
   } = useMosaifyWizard();
 
-  const handlers = { selectPlaylist, selectImage, connect, confirmPlaylist, confirmImage, reset };
+  const handlers = {
+    selectPlaylist,
+    setPlaylistSearch,
+    selectImage,
+    connect,
+    confirmPlaylist,
+    confirmImage,
+    reset,
+  };
 
   return (
     <div className="min-h-screen bg-background text-foreground font-sans flex flex-col relative overflow-hidden">

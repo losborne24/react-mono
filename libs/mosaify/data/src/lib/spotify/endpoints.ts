@@ -43,16 +43,25 @@ export async function fetchUserPlaylists(limit = 50): Promise<Playlist[]> {
   return page.items.filter(Boolean).map(toPlaylist);
 }
 
+/** A single playlist by id. */
+export async function fetchPlaylist(playlistId: string): Promise<Playlist> {
+  const p = await spotifyGet<SpotifyPlaylistSummary>(
+    `/playlists/${playlistId}?fields=id,name,images,owner(display_name),tracks(total)`,
+  );
+  return toPlaylist(p);
+}
+
 /**
- * Spotify-curated/featured playlists. The /browse/featured-playlists endpoint
- * is DEPRECATED and returns 403/404 for newer apps, so this is best-effort:
- * on any failure we return an empty list rather than erroring.
+ * Public playlists matching a search query. Replaces the deprecated
+ * /browse/featured-playlists endpoint. Best-effort: on any failure we return
+ * an empty list rather than erroring.
  */
-export async function fetchFeaturedPlaylists(limit = 8): Promise<Playlist[]> {
+export async function fetchSearchPlaylists(query: string, limit = 8): Promise<Playlist[]> {
+  if (!query.trim()) return [];
   try {
     const res = await spotifyGet<{
       playlists: SpotifyPaged<SpotifyPlaylistSummary>;
-    }>(`/browse/featured-playlists?limit=${limit}`);
+    }>(`/search?q=${encodeURIComponent(query)}&type=playlist&limit=${limit}`);
     return res.playlists.items.filter(Boolean).map(toPlaylist);
   } catch {
     return [];
