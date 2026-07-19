@@ -79,10 +79,10 @@ export function ConnectToSpotify({
           {checking ? (
             <Loading label="Checking session…" size={18} className="text-black" />
           ) : (
-            <>
+            <span className="flex items-center gap-3">
               <SpotifyLogo size={20} />
               Connect with Spotify
-            </>
+            </span>
           )}
         </Button>
 
