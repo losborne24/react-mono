@@ -21,10 +21,7 @@ export function ConnectToSpotify({
   const checking = status === 'checking';
 
   return (
-    <div
-      className="flex flex-col items-center justify-center flex-1 px-6 text-center"
-      style={{ minHeight: '60vh' }}
-    >
+    <div className="flex flex-col items-center justify-center flex-1 px-6 text-center">
       {/* Ambient glow */}
       <div
         className="absolute w-96 h-96 rounded-full pointer-events-none"
