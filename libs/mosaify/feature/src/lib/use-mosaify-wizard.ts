@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useStepper, type StepperStep } from '@react-mono/shared-ui';
+import { useDebounced, useStepper, type StepperStep } from '@react-mono/shared-ui';
 import type { Playlist, SourceImage } from '@react-mono/models';
 import {
   SAMPLE_IMAGES,
+  extractPlaylistId,
   fetchPlaylist,
   fetchSearchPlaylists,
   fetchPlaylistArtwork,
@@ -29,19 +30,6 @@ export const WIZARD_STEP_DEFS = [
 export const WIZARD_STEPS = WIZARD_STEP_DEFS.map((s) => s.id);
 
 export type WizardStep = (typeof WIZARD_STEPS)[number];
-
-/**
- * Extract a Spotify playlist id from a raw id, URL, or `spotify:` URI.
- * Returns null when the input isn't a recognisable playlist reference.
- */
-function extractPlaylistId(input: string): string | null {
-  const trimmed = input.trim();
-  const fromUrl = trimmed.match(/playlist[/:]([a-zA-Z0-9]+)/);
-  if (fromUrl) return fromUrl[1];
-  // A bare base62 id (Spotify ids are 22 chars, but stay lenient).
-  if (/^[a-zA-Z0-9]{22}$/.test(trimmed)) return trimmed;
-  return null;
-}
 
 /**
  * The playlist grid: the user's own playlists by default, replaced by search
@@ -86,16 +74,6 @@ function usePlaylistBrowser(
   const loading = authed && (trimmedSearch.length > 0 ? searchFetching : minePending);
 
   return { playlists, loading };
-}
-
-/** Debounce a rapidly-changing value; returns the last value after `ms` idle. */
-function useDebounced<T>(value: T, ms: number): T {
-  const [debounced, setDebounced] = useState(value);
-  useEffect(() => {
-    const id = setTimeout(() => setDebounced(value), ms);
-    return () => clearTimeout(id);
-  }, [value, ms]);
-  return debounced;
 }
 
 /** Display steps for the UI `WizardLayout` / `Stepper`. */
