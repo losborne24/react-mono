@@ -4,10 +4,11 @@
 @import 'tw-animate-css';
 
 /* Scan workspace libraries consumed by this app for Tailwind classes.
-   Resolved by package name via node_modules — survives lib moves. */
-@source '@react-mono/mosaify-ui';
-@source '@react-mono/mosaify-feature';
-@source '@react-mono/shared-ui';
+   @source takes a path relative to this stylesheet. If a lib moves, update
+   these paths (Nx's move generator rewrites project references too). */
+@source '../../../libs/mosaify/ui/src';
+@source '../../../libs/mosaify/feature/src';
+@source '../../../libs/shared/ui/src';
 
 @custom-variant dark (&:is(.dark *));
 
