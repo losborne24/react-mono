@@ -36,7 +36,7 @@ export async function fetchCurrentUser(): Promise<{
 }
 
 /** The user's own playlists. Primary, reliable data source. */
-export async function fetchUserPlaylists(limit = 50): Promise<Playlist[]> {
+export async function fetchUserPlaylists(limit = 40): Promise<Playlist[]> {
   const page = await spotifyGet<SpotifyPaged<SpotifyPlaylistSummary>>(
     `/me/playlists?limit=${limit}`,
   );
