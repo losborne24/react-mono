@@ -37,6 +37,73 @@ function ConnectedBadge({ name, onSwitch }: { name: string; onSwitch: () => void
   );
 }
 
+function BackgroundTexture() {
+  return (
+    <div
+      className="absolute inset-0 pointer-events-none"
+      style={{
+        backgroundImage:
+          'radial-gradient(ellipse 80% 50% at 50% -10%, rgba(29,185,84,0.07) 0%, transparent 60%)',
+      }}
+    />
+  );
+}
+
+type WizardHandlers = Pick<
+  ReturnType<typeof useMosaifyWizard>,
+  'selectPlaylist' | 'selectImage' | 'connect' | 'confirmPlaylist' | 'confirmImage' | 'reset'
+>;
+
+function WizardContent({
+  view,
+  handlers,
+}: {
+  view: ReturnType<typeof useMosaifyWizard>['view'];
+  handlers: WizardHandlers;
+}) {
+  switch (view.step) {
+    case 'connect':
+      return (
+        <ConnectToSpotify
+          onConnect={handlers.connect}
+          status={view.status}
+          configured={view.configured}
+          error={view.error}
+        />
+      );
+    case 'playlist':
+      return (
+        <SelectPlaylist
+          playlists={view.playlists}
+          selected={view.selected}
+          loading={view.loading}
+          onSelect={handlers.selectPlaylist}
+          onNext={handlers.confirmPlaylist}
+        />
+      );
+    case 'image':
+      return (
+        <SelectImage
+          images={view.images}
+          selected={view.selected}
+          onSelect={handlers.selectImage}
+          onGenerate={handlers.confirmImage}
+        />
+      );
+    case 'mosaic':
+      return (
+        <Mosaic
+          image={view.image}
+          playlist={view.playlist}
+          tiles={view.tiles}
+          onReset={handlers.reset}
+        />
+      );
+    default:
+      return null;
+  }
+}
+
 export function App() {
   const {
     view,
@@ -52,52 +119,19 @@ export function App() {
     switchAccount,
   } = useMosaifyWizard();
 
+  const handlers = { selectPlaylist, selectImage, connect, confirmPlaylist, confirmImage, reset };
+
   return (
     <div className="min-h-screen bg-background text-foreground font-sans flex flex-col relative overflow-hidden">
-      {/* Background texture */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          backgroundImage:
-            'radial-gradient(ellipse 80% 50% at 50% -10%, rgba(29,185,84,0.07) 0%, transparent 60%)',
-        }}
-      />
+      <BackgroundTexture />
 
-      {/* Header */}
       <header className="relative z-10 flex items-center justify-between px-6 pt-6 pb-0">
         <Brand />
         {profile && <ConnectedBadge name={profile.name} onSwitch={switchAccount} />}
       </header>
 
       <WizardLayout stepNumber={stepNumber} steps={WIZARD_STEP_INDICATORS} onBack={back}>
-        {view.step === 'connect' && (
-          <ConnectToSpotify
-            onConnect={connect}
-            status={view.status}
-            configured={view.configured}
-            error={view.error}
-          />
-        )}
-        {view.step === 'playlist' && (
-          <SelectPlaylist
-            playlists={view.playlists}
-            selected={view.selected}
-            loading={view.loading}
-            onSelect={selectPlaylist}
-            onNext={confirmPlaylist}
-          />
-        )}
-        {view.step === 'image' && (
-          <SelectImage
-            images={view.images}
-            selected={view.selected}
-            onSelect={selectImage}
-            onGenerate={confirmImage}
-          />
-        )}
-        {view.step === 'mosaic' && (
-          <Mosaic image={view.image} playlist={view.playlist} tiles={view.tiles} onReset={reset} />
-        )}
+        <WizardContent view={view} handlers={handlers} />
       </WizardLayout>
     </div>
   );
