@@ -11,6 +11,5 @@ export interface Playlist {
 export interface SourceImage {
   id: string;
   url: string;
-  thumbUrl: string;
   label: string;
 }

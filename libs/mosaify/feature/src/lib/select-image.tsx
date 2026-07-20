@@ -1,7 +1,8 @@
 import { useRef, useState } from 'react';
-import { IconUpload, IconCheck, IconChevronRight } from '@tabler/icons-react';
+import { IconUpload, IconChevronRight } from '@tabler/icons-react';
 import type { SourceImage } from '@react-mono/models';
 import { ICON_SIZE } from '@react-mono/shared-ui';
+import { SelectableThumb } from '@react-mono/mosaify-ui';
 
 export interface SelectImageProps {
   images: SourceImage[];
@@ -55,37 +56,27 @@ export function SelectImage({ images, selected, onSelect, onGenerate }: SelectIm
       <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest mb-3">
         Or choose a sample
       </p>
-      <div className="grid grid-cols-3 sm:grid-cols-6 gap-2.5 mb-8">
-        {images.map((img) => {
-          const isSelected = selected?.id === img.id;
-          return (
-            <button
-              key={img.id}
-              onClick={() => onSelect(img)}
-              className="group relative rounded-lg overflow-hidden aspect-square border-2 transition-all duration-200 cursor-pointer"
-              style={{
-                borderColor: isSelected ? 'var(--primary)' : 'transparent',
-              }}
-              aria-pressed={isSelected}
-            >
+      <div className="grid grid-cols-4 gap-2.5 mb-8">
+        {images.map((img) => (
+          <button
+            key={img.id}
+            onClick={() => onSelect(img)}
+            className="group rounded-lg overflow-hidden aspect-square border-2 transition-all duration-200 cursor-pointer"
+            style={{ borderColor: selected?.id === img.id ? 'var(--primary)' : 'transparent' }}
+            aria-pressed={selected?.id === img.id}
+          >
+            <SelectableThumb selected={selected?.id === img.id}>
               <img
-                src={img.thumbUrl}
+                src={img.url}
                 alt={img.label}
                 className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
               />
-              {isSelected && (
-                <div className="absolute inset-0 bg-primary/25 flex items-end justify-start p-1.5">
-                  <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
-                    <IconCheck size={ICON_SIZE.xs} className="text-black" stroke={3} />
-                  </div>
-                </div>
-              )}
               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-end p-1.5">
                 <span className="text-[10px] text-white font-medium">{img.label}</span>
               </div>
-            </button>
-          );
-        })}
+            </SelectableThumb>
+          </button>
+        ))}
       </div>
 
       <div className="flex items-center justify-between mt-auto">

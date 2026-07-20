@@ -86,7 +86,7 @@ export async function fetchPlaylistArtwork(
     const url = pickImage(item.track?.album?.images);
     if (!url || seen.has(url)) continue;
     seen.add(url);
-    tiles.push({ id: url, url, thumbUrl: url, label: 'Album art' });
+    tiles.push({ id: url, url, label: 'Album art' });
   }
   return tiles;
 }

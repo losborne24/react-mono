@@ -1,6 +1,5 @@
-import { IconCheck } from '@tabler/icons-react';
 import type { Playlist } from '@react-mono/models';
-import { ICON_SIZE } from '@react-mono/shared-ui';
+import { SelectableThumb } from './selectable-thumb';
 
 export interface PlaylistCardProps {
   playlist: Playlist;
@@ -19,20 +18,13 @@ export function PlaylistCard({ playlist, selected, onSelect }: PlaylistCardProps
       }}
       aria-pressed={selected}
     >
-      <div className="relative rounded-lg overflow-hidden aspect-square bg-muted">
+      <SelectableThumb selected={selected}>
         <img
           src={playlist.img}
           alt={playlist.title}
           className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
         />
-        {selected && (
-          <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
-            <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center shadow-lg">
-              <IconCheck size={ICON_SIZE.sm} className="text-black" stroke={2.5} />
-            </div>
-          </div>
-        )}
-      </div>
+      </SelectableThumb>
       <div className="px-0.5 pb-0.5">
         <p className="text-xs font-semibold text-foreground truncate leading-tight">
           {playlist.title}
