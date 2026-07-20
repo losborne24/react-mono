@@ -1,6 +1,7 @@
 import { IconDownload, IconShare2, IconRefresh } from '@tabler/icons-react';
 import type { Playlist, SourceImage } from '@react-mono/models';
 import { MosaicGrid } from '@react-mono/mosaify-ui';
+import { ICON_SIZE } from '@react-mono/shared-ui';
 
 const COLS = 22;
 const ROWS = 16;
@@ -57,18 +58,18 @@ export function Mosaic({ image, playlist, tiles, onReset }: MosaicProps) {
           className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 cursor-pointer"
           style={{ background: '#1db954', color: '#000' }}
         >
-          <IconDownload size={15} />
+          <IconDownload size={ICON_SIZE.md} />
           Download
         </button>
         <button className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm border border-border bg-card text-foreground hover:bg-secondary transition-all duration-200 cursor-pointer">
-          <IconShare2 size={15} />
+          <IconShare2 size={ICON_SIZE.md} />
           Share
         </button>
         <button
           onClick={onReset}
           className="ml-auto flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm text-muted-foreground hover:text-foreground border border-border hover:border-border/60 transition-all duration-200 cursor-pointer"
         >
-          <IconRefresh size={14} />
+          <IconRefresh size={ICON_SIZE.sm} />
           Start over
         </button>
       </div>

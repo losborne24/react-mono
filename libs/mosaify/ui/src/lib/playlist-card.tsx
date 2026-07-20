@@ -1,5 +1,6 @@
 import { IconCheck } from '@tabler/icons-react';
 import type { Playlist } from '@react-mono/models';
+import { ICON_SIZE } from '@react-mono/shared-ui';
 
 export interface PlaylistCardProps {
   playlist: Playlist;
@@ -27,7 +28,7 @@ export function PlaylistCard({ playlist, selected, onSelect }: PlaylistCardProps
         {selected && (
           <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
             <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center shadow-lg">
-              <IconCheck size={14} className="text-black" stroke={2.5} />
+              <IconCheck size={ICON_SIZE.sm} className="text-black" stroke={2.5} />
             </div>
           </div>
         )}

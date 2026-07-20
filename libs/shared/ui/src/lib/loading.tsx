@@ -1,12 +1,14 @@
 import { IconLoader2 } from '@tabler/icons-react';
 
+import { ICON_SIZE } from './icon-size';
+
 export interface LoadingProps {
   label?: string;
   size?: number;
   className?: string;
 }
 
-export function Loading({ label, size = 18, className }: LoadingProps) {
+export function Loading({ label, size = ICON_SIZE.lg, className }: LoadingProps) {
   return (
     <span
       role="status"

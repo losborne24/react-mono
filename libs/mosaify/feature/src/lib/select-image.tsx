@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { IconUpload, IconCheck, IconChevronRight } from '@tabler/icons-react';
 import type { SourceImage } from '@react-mono/models';
+import { ICON_SIZE } from '@react-mono/shared-ui';
 
 export interface SelectImageProps {
   images: SourceImage[];
@@ -42,7 +43,7 @@ export function SelectImage({ images, selected, onSelect, onGenerate }: SelectIm
           background: dragging ? 'rgba(29,185,84,0.05)' : 'transparent',
         }}
       >
-        <IconUpload size={16} className="text-muted-foreground" />
+        <IconUpload size={ICON_SIZE.md} className="text-muted-foreground" />
         <span className="text-sm text-muted-foreground">
           Drop an image or{' '}
           <span className="text-primary underline underline-offset-2">browse files</span>
@@ -75,7 +76,7 @@ export function SelectImage({ images, selected, onSelect, onGenerate }: SelectIm
               {isSelected && (
                 <div className="absolute inset-0 bg-primary/25 flex items-end justify-start p-1.5">
                   <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
-                    <IconCheck size={11} className="text-black" stroke={3} />
+                    <IconCheck size={ICON_SIZE.xs} className="text-black" stroke={3} />
                   </div>
                 </div>
               )}
@@ -103,7 +104,7 @@ export function SelectImage({ images, selected, onSelect, onGenerate }: SelectIm
             style={{ background: '#1db954', color: '#000' }}
           >
             Generate Mosaic
-            <IconChevronRight size={16} />
+            <IconChevronRight size={ICON_SIZE.md} />
           </button>
         </div>
       </div>

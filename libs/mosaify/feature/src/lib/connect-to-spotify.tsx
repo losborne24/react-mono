@@ -1,6 +1,6 @@
 import { IconLayoutCollage, IconAlertTriangle } from '@tabler/icons-react';
 import { SpotifyLogo } from '@react-mono/mosaify-ui';
-import { Loading, Button } from '@react-mono/shared-ui';
+import { ICON_SIZE, Loading, Button } from '@react-mono/shared-ui';
 import type { AuthStatus } from './use-mosaify-wizard';
 
 export interface ConnectToSpotifyProps {
@@ -28,11 +28,11 @@ function IconCluster() {
     <div className="relative">
       <div className="w-24 h-24 rounded-2xl bg-card border border-border flex items-center justify-center shadow-2xl">
         <div className="text-primary">
-          <SpotifyLogo size={44} />
+          <SpotifyLogo size={ICON_SIZE.xl} />
         </div>
       </div>
       <div className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-primary flex items-center justify-center">
-        <IconLayoutCollage size={12} className="text-primary-foreground" />
+        <IconLayoutCollage size={ICON_SIZE.xs} className="text-primary-foreground" />
       </div>
     </div>
   );
@@ -41,7 +41,7 @@ function IconCluster() {
 function NotConfiguredWarning() {
   return (
     <div className="flex items-start gap-2 max-w-sm text-left rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-foreground">
-      <IconAlertTriangle size={16} className="text-destructive mt-0.5 shrink-0" />
+      <IconAlertTriangle size={ICON_SIZE.md} className="text-destructive mt-0.5 shrink-0" />
       <span>
         Spotify isn&apos;t configured. Set{' '}
         <code className="text-primary">VITE_SPOTIFY_CLIENT_ID</code> in <code>.env.local</code> and
@@ -65,10 +65,14 @@ function ConnectButton({ onConnect, checking, configured }: ConnectButtonProps) 
       className="gap-3 px-8 py-4 h-auto rounded-xl font-semibold text-base bg-primary text-primary-foreground"
     >
       {checking ? (
-        <Loading label="Checking session…" size={18} className="text-primary-foreground" />
+        <Loading
+          label="Checking session…"
+          size={ICON_SIZE.lg}
+          className="text-primary-foreground"
+        />
       ) : (
         <span className="flex items-center gap-3">
-          <SpotifyLogo size={20} />
+          <SpotifyLogo size={ICON_SIZE.lg} />
           Connect with Spotify
         </span>
       )}

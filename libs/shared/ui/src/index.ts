@@ -1,3 +1,4 @@
+export * from './lib/icon-size';
 export * from './lib/loading';
 export * from './lib/button';
 export * from './lib/stepper';

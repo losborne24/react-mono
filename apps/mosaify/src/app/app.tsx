@@ -1,5 +1,5 @@
 import { IconLayoutCollage } from '@tabler/icons-react';
-import { Button } from '@react-mono/shared-ui';
+import { Button, ICON_SIZE } from '@react-mono/shared-ui';
 import { WizardLayout } from '@react-mono/mosaify-ui';
 import {
   ConnectToSpotify,
@@ -14,7 +14,7 @@ function Brand() {
   return (
     <div className="flex items-center gap-2.5">
       <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
-        <IconLayoutCollage size={14} className="text-black" />
+        <IconLayoutCollage size={ICON_SIZE.sm} className="text-black" />
       </div>
       <span className="font-display font-bold text-sm tracking-tight text-foreground">Mosaify</span>
     </div>

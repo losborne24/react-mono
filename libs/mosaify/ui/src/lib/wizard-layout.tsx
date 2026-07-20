@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { IconChevronLeft } from '@tabler/icons-react';
-import { Stepper, type StepperStep } from '@react-mono/shared-ui';
+import { ICON_SIZE, Stepper, type StepperStep } from '@react-mono/shared-ui';
 
 export interface WizardLayoutProps {
   /** 1-based current step, drives the step indicator. */
@@ -31,7 +31,7 @@ export function WizardLayout({ stepNumber, steps, onBack, children }: WizardLayo
             onClick={onBack}
             className="flex items-center gap-1.5 py-2 rounded-xl font-semibold text-sm text-muted-foreground hover:text-foreground transition-all duration-200 cursor-pointer"
           >
-            <IconChevronLeft size={16} />
+            <IconChevronLeft size={ICON_SIZE.md} />
             Back
           </button>
         </div>

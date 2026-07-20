@@ -1,5 +1,6 @@
 import { IconCheck } from '@tabler/icons-react';
 
+import { ICON_SIZE } from './icon-size';
 import { cn } from './utils';
 
 export interface StepperStep {
@@ -33,7 +34,7 @@ function StepNode({ label, n, isDone, isCurrent }: StepNodeProps) {
           isUpcoming && 'bg-muted text-muted-foreground border border-border',
         )}
       >
-        {isDone ? <IconCheck size={14} stroke={2.5} /> : n}
+        {isDone ? <IconCheck size={ICON_SIZE.sm} stroke={2.5} /> : n}
       </div>
       <span
         className={cn(

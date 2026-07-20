@@ -1,7 +1,7 @@
 import { IconChevronRight, IconSearch, IconX } from '@tabler/icons-react';
 import type { Playlist } from '@react-mono/models';
 import { PlaylistCard } from '@react-mono/mosaify-ui';
-import { Loading } from '@react-mono/shared-ui';
+import { ICON_SIZE, Loading } from '@react-mono/shared-ui';
 
 export interface SelectPlaylistProps {
   playlists: Playlist[];
@@ -26,7 +26,7 @@ function PlaylistSearch({ search, searching, onSearchChange }: PlaylistSearchPro
   return (
     <div className="relative mb-6">
       <IconSearch
-        size={16}
+        size={ICON_SIZE.md}
         className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
       />
       <input
@@ -43,7 +43,7 @@ function PlaylistSearch({ search, searching, onSearchChange }: PlaylistSearchPro
           aria-label="Clear search"
           className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
         >
-          <IconX size={16} />
+          <IconX size={ICON_SIZE.md} />
         </button>
       )}
     </div>
@@ -70,7 +70,7 @@ function PlaylistGrid({
   if (loading) {
     return (
       <div className="flex items-center justify-center flex-1 py-16">
-        <Loading label={searching ? 'Searching…' : 'Loading your playlists…'} size={20} />
+        <Loading label={searching ? 'Searching…' : 'Loading your playlists…'} size={ICON_SIZE.lg} />
       </div>
     );
   }
@@ -121,7 +121,7 @@ function SelectFooter({ selected, onNext }: SelectFooterProps) {
           style={{ background: '#1db954', color: '#000' }}
         >
           Next
-          <IconChevronRight size={16} />
+          <IconChevronRight size={ICON_SIZE.md} />
         </button>
       </div>
     </div>
