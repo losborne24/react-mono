@@ -8,11 +8,17 @@ export default defineConfig(() => ({
   cacheDir: '../../node_modules/.vite/apps/mosaify',
   server: {
     port: 4200,
-    host: 'localhost',
+    // Match the Spotify OAuth redirect URI origin (127.0.0.1, not localhost).
+    // sessionStorage is per-origin; a localhost/127.0.0.1 split loses the PKCE
+    // verifier + state across the redirect, breaking the token exchange.
+    host: '127.0.0.1',
   },
   preview: {
     port: 4200,
-    host: 'localhost',
+    // Match the Spotify OAuth redirect URI origin (127.0.0.1, not localhost).
+    // sessionStorage is per-origin; a localhost/127.0.0.1 split loses the PKCE
+    // verifier + state across the redirect, breaking the token exchange.
+    host: '127.0.0.1',
   },
   plugins: [react(), tailwindcss()],
   // Uncomment this if you are using workers.
