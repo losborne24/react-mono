@@ -41,7 +41,7 @@ export function SelectImage({ images, selected, onSelect, onGenerate }: SelectIm
         className="flex items-center justify-center gap-3 rounded-xl py-4 mb-5 cursor-pointer border border-dashed transition-all duration-200"
         style={{
           borderColor: dragging ? 'var(--primary)' : 'var(--border)',
-          background: dragging ? 'rgba(29,185,84,0.05)' : 'transparent',
+          background: dragging ? 'var(--primary-selected-bg)' : 'transparent',
         }}
       >
         <IconUpload size={ICON_SIZE.md} className="text-muted-foreground" />
@@ -62,10 +62,12 @@ export function SelectImage({ images, selected, onSelect, onGenerate }: SelectIm
             key={img.id}
             onClick={() => onSelect(img)}
             className="group rounded-lg overflow-hidden aspect-square border-2 transition-all duration-200 cursor-pointer"
-            style={{ borderColor: selected?.id === img.id ? 'var(--primary)' : 'transparent' }}
+            style={{
+              borderColor: selected?.id === img.id ? 'var(--primary-selected)' : 'transparent',
+            }}
             aria-pressed={selected?.id === img.id}
           >
-            <SelectableThumb selected={selected?.id === img.id}>
+            <SelectableThumb selected={selected?.id === img.id} className="rounded-md">
               <img
                 src={img.url}
                 alt={img.label}

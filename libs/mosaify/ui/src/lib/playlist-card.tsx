@@ -13,8 +13,8 @@ export function PlaylistCard({ playlist, selected, onSelect }: PlaylistCardProps
       onClick={() => onSelect(playlist)}
       className="group relative flex flex-col gap-2 rounded-xl p-2 text-left transition-all duration-200 border cursor-pointer"
       style={{
-        background: selected ? 'rgba(29,185,84,0.08)' : 'var(--card)',
-        borderColor: selected ? 'rgba(29,185,84,0.5)' : 'var(--border)',
+        background: selected ? 'var(--primary-selected-bg)' : 'var(--card)',
+        borderColor: selected ? 'var(--primary-selected)' : 'var(--border)',
       }}
       aria-pressed={selected}
     >

@@ -22,6 +22,8 @@
   --popover-foreground: #ededf0;
   --primary: #1db954;
   --primary-foreground: #000000;
+  --primary-selected: rgba(29, 185, 84, 0.5);
+  --primary-selected-bg: rgba(29, 185, 84, 0.08);
   --secondary: #1e1e24;
   --secondary-foreground: #ededf0;
   --muted: #1e1e24;
