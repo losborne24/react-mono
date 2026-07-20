@@ -1,7 +1,7 @@
 import { IconChevronRight, IconSearch, IconX } from '@tabler/icons-react';
 import type { Playlist } from '@react-mono/models';
 import { PlaylistCard } from '@react-mono/mosaify-ui';
-import { ICON_SIZE, Loading } from '@react-mono/shared-ui';
+import { Button, ICON_SIZE, Loading } from '@react-mono/shared-ui';
 
 export interface SelectPlaylistProps {
   playlists: Playlist[];
@@ -114,15 +114,16 @@ function SelectFooter({ selected, onNext }: SelectFooterProps) {
         <p className="text-sm text-muted-foreground">No playlist selected</p>
       )}
       <div className="flex items-center gap-2">
-        <button
+        <Button
           onClick={onNext}
           disabled={!selected}
-          className="flex items-center gap-2 px-6 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-          style={{ background: '#1db954', color: '#000' }}
+          variant="spotify"
+          size="lg"
+          className="rounded-xl"
         >
           Next
           <IconChevronRight size={ICON_SIZE.md} />
-        </button>
+        </Button>
       </div>
     </div>
   );
