@@ -1,46 +1,16 @@
-import { useRef, useState } from 'react';
-import { IconUpload, IconChevronRight } from '@tabler/icons-react';
+import { IconChevronRight } from '@tabler/icons-react';
 import type { SourceImage } from '@react-mono/models';
-import { Button, ICON_SIZE } from '@react-mono/shared-ui';
+import { Button, ICON_SIZE, UploadZone, useImageUpload } from '@react-mono/shared-ui';
 import { SelectableThumb } from '@react-mono/mosaify-ui';
+
+/** Stable id for the uploaded image, so samples never match it in the grid. */
+const UPLOAD_ID = 'uploaded-image';
 
 export interface SelectImageProps {
   images: SourceImage[];
   selected: SourceImage | null;
-  onSelect: (image: SourceImage) => void;
+  onSelect: (image: SourceImage | null) => void;
   onGenerate: () => void;
-}
-
-function UploadZone() {
-  const fileRef = useRef<HTMLInputElement>(null);
-  const [dragging, setDragging] = useState(false);
-
-  return (
-    <div
-      onDragOver={(e) => {
-        e.preventDefault();
-        setDragging(true);
-      }}
-      onDragLeave={() => setDragging(false)}
-      onDrop={(e) => {
-        e.preventDefault();
-        setDragging(false);
-      }}
-      onClick={() => fileRef.current?.click()}
-      className="flex items-center justify-center gap-3 rounded-xl py-4 mb-5 cursor-pointer border border-dashed transition-all duration-200"
-      style={{
-        borderColor: dragging ? 'var(--primary)' : 'var(--border)',
-        background: dragging ? 'var(--primary-selected-bg)' : 'transparent',
-      }}
-    >
-      <IconUpload size={ICON_SIZE.md} className="text-muted-foreground" />
-      <span className="text-sm text-muted-foreground">
-        Drop an image or{' '}
-        <span className="text-primary underline underline-offset-2">browse files</span>
-      </span>
-      <input ref={fileRef} type="file" accept="image/*" className="hidden" />
-    </div>
-  );
 }
 
 interface SampleThumbProps {
@@ -126,6 +96,17 @@ function SelectionFooter({ selected, onGenerate }: SelectionFooterProps) {
 }
 
 export function SelectImage({ images, selected, onSelect, onGenerate }: SelectImageProps) {
+  // Upload and sample selection share one `selected` slot, so choosing one
+  // replaces the other — mutual exclusion falls out of the single source of truth.
+  const upload = useImageUpload((file, url) => {
+    onSelect(file && url ? { id: UPLOAD_ID, url, label: file.name } : null);
+  });
+
+  const handleSelectSample = (image: SourceImage) => {
+    upload.clear();
+    onSelect(image);
+  };
+
   return (
     <div className="flex flex-col flex-1 px-6 pb-12 max-w-3xl mx-auto w-full">
       <div className="mb-6">
@@ -138,13 +119,20 @@ export function SelectImage({ images, selected, onSelect, onGenerate }: SelectIm
       </div>
 
       {/* Upload zone */}
-      <UploadZone />
+      <UploadZone
+        file={upload.file}
+        url={upload.url}
+        onFile={upload.setFile}
+        onClear={upload.clear}
+        inputRef={upload.inputRef}
+        className="mb-5"
+      />
 
       {/* Sample images */}
       <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest mb-3">
         Or choose a sample
       </p>
-      <SampleGrid images={images} selected={selected} onSelect={onSelect} />
+      <SampleGrid images={images} selected={selected} onSelect={handleSelectSample} />
 
       <SelectionFooter selected={selected} onGenerate={onGenerate} />
     </div>
