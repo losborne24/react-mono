@@ -96,6 +96,9 @@ function WizardContent({
           selected={view.selected}
           onSelect={handlers.selectImage}
           onGenerate={handlers.confirmImage}
+          trackCoversLoading={view.trackCoversLoading}
+          trackCoversLoaded={view.trackCoversLoaded}
+          trackCount={view.trackCount}
         />
       );
     case 'mosaic':
@@ -103,7 +106,7 @@ function WizardContent({
         <Mosaic
           image={view.image}
           playlist={view.playlist}
-          tiles={view.tiles}
+          trackCovers={view.trackCovers}
           onReset={handlers.reset}
         />
       );

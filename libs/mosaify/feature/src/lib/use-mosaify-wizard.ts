@@ -1,13 +1,14 @@
-import { useEffect, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useEffect, useMemo, useState } from 'react';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { useDebounced, useStepper, type StepperStep } from '@react-mono/shared-ui';
 import type { Playlist, SourceImage } from '@react-mono/models';
 import {
+  ARTWORK_PAGE_SIZE,
   SAMPLE_IMAGES,
   extractPlaylistId,
   fetchPlaylist,
   fetchSearchPlaylists,
-  fetchPlaylistArtwork,
+  fetchPlaylistArtworkPage,
   fetchUserPlaylists,
 } from '@react-mono/mosaify-data';
 import { useSpotifyAuth } from './use-spotify-auth';
@@ -94,12 +95,19 @@ export type WizardView =
       loading: boolean;
       search: string;
     }
-  | { step: 'image'; images: SourceImage[]; selected: SourceImage | null }
+  | {
+      step: 'image';
+      images: SourceImage[];
+      selected: SourceImage | null;
+      trackCoversLoading: boolean;
+      trackCoversLoaded: number;
+      trackCount: number;
+    }
   | {
       step: 'mosaic';
       image: SourceImage;
       playlist: Playlist;
-      tiles: SourceImage[];
+      trackCovers: SourceImage[];
     };
 
 export interface MosaifyWizard {
@@ -133,13 +141,56 @@ export function useMosaifyWizard(): MosaifyWizard {
 
   const { playlists, loading: playlistsLoading } = usePlaylistBrowser(status, debouncedSearch);
 
-  // Album art for the chosen playlist — the mosaic tiles. Fetched on selection.
+  // Album art for the chosen playlist — the mosaic tiles. Spotify's tracks
+  // endpoint caps at 100 per request, so a playlist spans multiple pages; the
+  // effect below chains `fetchNextPage` on each settle until the cursor runs
+  // out. All pages are needed before the mosaic renders (see `trackCoversLoading`).
   const selectedPlaylistId = selectedPlaylist?.id;
-  const { data: tiles = [] } = useQuery({
+  const artwork = useInfiniteQuery({
     queryKey: ['spotify', 'artwork', selectedPlaylistId],
     enabled: !!selectedPlaylistId,
-    queryFn: () => fetchPlaylistArtwork(selectedPlaylistId as string),
+    initialPageParam: undefined as string | undefined,
+    queryFn: ({ pageParam }) => fetchPlaylistArtworkPage(selectedPlaylistId ?? '', pageParam),
+    getNextPageParam: (last) => last.next,
   });
+
+  const { hasNextPage, isFetchingNextPage, fetchNextPage } = artwork;
+  useEffect(() => {
+    if (hasNextPage && !isFetchingNextPage) fetchNextPage();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+  // Progress by settled batch, not `page.items.length` — each page dedups its
+  // own repeated album art, so counting items undercounts tracks scanned. Each
+  // landed page covers `ARTWORK_PAGE_SIZE` tracks; cap at `trackCount` since the
+  // final page is partial.
+  const trackCount = selectedPlaylist?.tracks ?? 0;
+  const tracksLoaded = useMemo(() => {
+    const pagesLoaded = artwork.data?.pages.length ?? 0;
+    return Math.min(pagesLoaded * ARTWORK_PAGE_SIZE, trackCount);
+  }, [artwork.data, trackCount]);
+
+  // Loading until every page has landed — the mosaic needs all tiles.
+  const trackCoversLoading = !!selectedPlaylistId && (artwork.isFetching || artwork.hasNextPage);
+
+  // Flatten all fetched pages into the mosaic tile list, deduped by URL — the
+  // same album art recurs across tracks and pages, and the mosaic wants each
+  // cover once. Dedup lives here (pure), not in the query function, so refetch
+  // and StrictMode re-runs stay idempotent. Only consumed once every page is
+  // in (mosaic step gated behind `trackCoversLoading`), so skip the flatten
+  // while pages arrive — recompute once, when loading settles.
+  const trackCovers = useMemo(() => {
+    if (trackCoversLoading) return [];
+    const seen = new Set<string>();
+    const covers: SourceImage[] = [];
+    for (const page of artwork.data?.pages ?? []) {
+      for (const cover of page.items) {
+        if (seen.has(cover.url)) continue;
+        seen.add(cover.url);
+        covers.push(cover);
+      }
+    }
+    return covers;
+  }, [artwork.data, trackCoversLoading]);
 
   useEffect(() => {
     if (status === 'authenticated' && stepper.index === 0) stepper.goTo(1);
@@ -147,12 +198,13 @@ export function useMosaifyWizard(): MosaifyWizard {
 
   const confirmPlaylist = () => {
     if (!selectedPlaylist) return;
-    // Artwork is fetched by the `tiles` query, keyed on the selected playlist.
+    // Artwork is fetched by the `trackCovers` query, keyed on the selected playlist.
     stepper.next();
   };
 
   const confirmImage = () => {
-    if (selectedImage) stepper.next();
+    // Wait for artwork tiles before entering the mosaic step.
+    if (selectedImage && !trackCoversLoading) stepper.next();
   };
 
   const switchAccount = () => {
@@ -194,10 +246,17 @@ export function useMosaifyWizard(): MosaifyWizard {
           search,
         };
       case 'image':
-        return { step, images: SAMPLE_IMAGES, selected: selectedImage };
+        return {
+          step,
+          images: SAMPLE_IMAGES,
+          selected: selectedImage,
+          trackCoversLoading,
+          trackCoversLoaded: tracksLoaded,
+          trackCount,
+        };
       case 'mosaic':
         if (selectedImage && selectedPlaylist) {
-          return { step, image: selectedImage, playlist: selectedPlaylist, tiles };
+          return { step, image: selectedImage, playlist: selectedPlaylist, trackCovers };
         }
         // Invariant: `mosaic` (index 3) is only reachable via confirmImage /
         // confirmPlaylist, which won't advance without the data, and reset /

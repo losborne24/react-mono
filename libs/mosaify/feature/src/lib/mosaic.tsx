@@ -10,13 +10,13 @@ export interface MosaicProps {
   image: SourceImage;
   playlist: Playlist;
   /** Album artwork used as mosaic tiles. */
-  tiles: SourceImage[];
+  trackCovers: SourceImage[];
   onReset: () => void;
 }
 
-export function Mosaic({ image, playlist, tiles, onReset }: MosaicProps) {
+export function Mosaic({ image, playlist, trackCovers, onReset }: MosaicProps) {
   const total = COLS * ROWS;
-  const tileUrls = tiles.map((t) => t.url);
+  const tileUrls = trackCovers.map((t) => t.url);
 
   const stats = [
     { label: 'Tiles', value: `${total.toLocaleString()}` },

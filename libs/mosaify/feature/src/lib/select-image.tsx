@@ -1,4 +1,4 @@
-import { IconChevronRight } from '@tabler/icons-react';
+import { IconChevronRight, IconLoader2 } from '@tabler/icons-react';
 import type { SourceImage } from '@react-mono/models';
 import { Button, ICON_SIZE, UploadZone, useImageUpload } from '@react-mono/shared-ui';
 import { SelectableThumb } from '@react-mono/mosaify-ui';
@@ -11,6 +11,12 @@ export interface SelectImageProps {
   selected: SourceImage | null;
   onSelect: (image: SourceImage | null) => void;
   onGenerate: () => void;
+  /** Playlist artwork still fetching — Generate stays disabled until done. */
+  trackCoversLoading: boolean;
+  /** Track covers loaded so far. */
+  trackCoversLoaded: number;
+  /** Total tracks in the selected playlist. */
+  trackCount: number;
 }
 
 interface SampleThumbProps {
@@ -67,9 +73,19 @@ function SampleGrid({ images, selected, onSelect }: SampleGridProps) {
 interface SelectionFooterProps {
   selected: SourceImage | null;
   onGenerate: () => void;
+  trackCoversLoading: boolean;
+  trackCoversLoaded: number;
+  trackCount: number;
 }
 
-function SelectionFooter({ selected, onGenerate }: SelectionFooterProps) {
+function SelectionFooter({
+  selected,
+  onGenerate,
+  trackCoversLoading,
+  trackCoversLoaded,
+  trackCount,
+}: SelectionFooterProps) {
+  const remaining = trackCount - trackCoversLoaded;
   return (
     <div className="flex items-center justify-between mt-auto">
       {selected ? (
@@ -82,20 +98,37 @@ function SelectionFooter({ selected, onGenerate }: SelectionFooterProps) {
       <div className="flex items-center gap-2">
         <Button
           onClick={onGenerate}
-          disabled={!selected}
+          disabled={!selected || trackCoversLoading}
           variant="spotify"
           size="lg"
           className="rounded-xl"
         >
-          Generate Mosaic
-          <IconChevronRight size={ICON_SIZE.md} />
+          {trackCoversLoading ? (
+            <>
+              <IconLoader2 size={ICON_SIZE.md} className="animate-spin" />
+              Loading track covers ({remaining} remaining)
+            </>
+          ) : (
+            <>
+              Generate Mosaic
+              <IconChevronRight size={ICON_SIZE.md} />
+            </>
+          )}
         </Button>
       </div>
     </div>
   );
 }
 
-export function SelectImage({ images, selected, onSelect, onGenerate }: SelectImageProps) {
+export function SelectImage({
+  images,
+  selected,
+  onSelect,
+  onGenerate,
+  trackCoversLoading,
+  trackCoversLoaded,
+  trackCount,
+}: SelectImageProps) {
   // Upload and sample selection share one `selected` slot, so choosing one
   // replaces the other — mutual exclusion falls out of the single source of truth.
   const upload = useImageUpload((file, url) => {
@@ -134,7 +167,13 @@ export function SelectImage({ images, selected, onSelect, onGenerate }: SelectIm
       </p>
       <SampleGrid images={images} selected={selected} onSelect={handleSelectSample} />
 
-      <SelectionFooter selected={selected} onGenerate={onGenerate} />
+      <SelectionFooter
+        selected={selected}
+        onGenerate={onGenerate}
+        trackCoversLoading={trackCoversLoading}
+        trackCoversLoaded={trackCoversLoaded}
+        trackCount={trackCount}
+      />
     </div>
   );
 }

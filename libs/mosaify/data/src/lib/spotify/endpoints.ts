@@ -1,5 +1,6 @@
 import type { Playlist, SourceImage } from '@react-mono/models';
 import { spotifyGet } from './client';
+import { averageColor } from './average-color';
 import type {
   SpotifyPaged,
   SpotifyPlaylistSummary,
@@ -68,25 +69,40 @@ export async function fetchSearchPlaylists(query: string, limit = 8): Promise<Pl
   }
 }
 
+/** Per-request maximum imposed by Spotify's playlist-tracks endpoint. */
+export const ARTWORK_PAGE_SIZE = 100;
+
 /**
- * Album artwork for a playlist's tracks — the actual mosaic tiles. Deduped,
- * empty-URL entries dropped.
+ * One page of album artwork for a playlist — the mosaic tiles. Returns the
+ * page's tiles plus the `next` cursor (null when exhausted), so callers can
+ * page incrementally (e.g. `useInfiniteQuery`) and render each page as it
+ * lands rather than waiting for the whole playlist. Omit `cursor` for the
+ * first page; pass the previous page's `next` for subsequent ones.
+ *
+ * Empty-URL entries are dropped and each tile is tagged with its average pixel
+ * colour (best-effort; omitted when it can't be read). Duplicate URLs within
+ * the page are collapsed; cross-page dedup is the caller's concern (the query
+ * function stays pure, so dedup can't rely on mutable state carried between
+ * calls).
  */
-export async function fetchPlaylistArtwork(
+export async function fetchPlaylistArtworkPage(
   playlistId: string,
-  limit = 100,
-): Promise<SourceImage[]> {
-  const page = await spotifyGet<SpotifyPaged<SpotifyPlaylistTrack>>(
-    `/playlists/${playlistId}/tracks?limit=${limit}&fields=items(track(album(images)))`,
-  );
+  cursor?: string | null,
+): Promise<{ items: SourceImage[]; next: string | null }> {
+  const url =
+    cursor ??
+    `/playlists/${playlistId}/tracks?limit=${ARTWORK_PAGE_SIZE}&fields=items(track(album(images))),next`;
+  const page = await spotifyGet<SpotifyPaged<SpotifyPlaylistTrack>>(url);
 
   const seen = new Set<string>();
-  const tiles: SourceImage[] = [];
+  const colorJobs: Promise<SourceImage>[] = [];
   for (const item of page.items) {
     const url = pickImage(item.track?.album?.images);
     if (!url || seen.has(url)) continue;
     seen.add(url);
-    tiles.push({ id: url, url, label: 'Album art' });
+    const cover: SourceImage = { id: url, url, label: 'Album art' };
+    colorJobs.push(averageColor(url).then((c) => (c ? { ...cover, color: c } : cover)));
   }
-  return tiles;
+
+  return { items: await Promise.all(colorJobs), next: page.next };
 }

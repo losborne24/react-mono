@@ -12,4 +12,6 @@ export interface SourceImage {
   id: string;
   url: string;
   label: string;
+  /** Average pixel colour as `rgb(r, g, b)`, when it could be computed. */
+  color?: string;
 }
