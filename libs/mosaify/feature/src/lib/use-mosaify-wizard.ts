@@ -198,7 +198,7 @@ export function useMosaifyWizard(): MosaifyWizard {
 
   const confirmPlaylist = () => {
     if (!selectedPlaylist) return;
-    // Artwork is fetched by the `trackCovers` query, keyed on the selected playlist.
+    // Artwork is fetched by the `artwork` infinite query, keyed on the selected playlist.
     stepper.next();
   };
 
@@ -272,8 +272,8 @@ export function useMosaifyWizard(): MosaifyWizard {
   return {
     step,
     view: buildView(),
-    stepNumber: WIZARD_STEPS.indexOf(step) + 1,
-    totalSteps: WIZARD_STEPS.length,
+    stepNumber: stepper.stepNumber,
+    totalSteps: stepper.count,
     profile,
     selectPlaylist: setSelectedPlaylist,
     setPlaylistSearch: setSearch,
