@@ -6,6 +6,20 @@ import { SelectableThumb } from '@react-mono/mosaify-ui';
 /** Stable id for the uploaded image, so samples never match it in the grid. */
 const UPLOAD_ID = 'uploaded-image';
 
+/**
+ * Read a file into a data URL. The mosaic outlives this step, so the tile
+ * source must too — an object URL is revoked when `useImageUpload` unmounts,
+ * leaving the mosaic sampling a dead `blob:` URL. A data URL is self-contained.
+ */
+function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
+
 export interface SelectImageProps {
   images: SourceImage[];
   selected: SourceImage | null;
@@ -131,8 +145,17 @@ export function SelectImage({
 }: SelectImageProps) {
   // Upload and sample selection share one `selected` slot, so choosing one
   // replaces the other — mutual exclusion falls out of the single source of truth.
-  const upload = useImageUpload((file, url) => {
-    onSelect(file && url ? { id: UPLOAD_ID, url, label: file.name } : null);
+  // The object URL drives the UploadZone preview, but the mosaic step (which
+  // outlives this component) needs a source that survives unmount, so the
+  // selected image carries a durable data URL instead of the object URL.
+  const upload = useImageUpload((file) => {
+    if (!file) {
+      onSelect(null);
+      return;
+    }
+    fileToDataUrl(file).then((dataUrl) =>
+      onSelect({ id: UPLOAD_ID, url: dataUrl, label: file.name }),
+    );
   });
 
   const handleSelectSample = (image: SourceImage) => {

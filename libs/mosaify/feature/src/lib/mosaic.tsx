@@ -1,10 +1,11 @@
+import { useCallback, useState } from 'react';
 import { IconDownload, IconShare2, IconRefresh } from '@tabler/icons-react';
 import type { Playlist, SourceImage } from '@react-mono/models';
 import { MosaicGrid } from '@react-mono/mosaify-ui';
 import { ICON_SIZE } from '@react-mono/shared-ui';
 
-const COLS = 22;
-const ROWS = 16;
+/** Tiles along the image's longer edge; the shorter edge follows its aspect. */
+const RESOLUTION = 200;
 
 export interface MosaicProps {
   image: SourceImage;
@@ -15,13 +16,15 @@ export interface MosaicProps {
 }
 
 export function Mosaic({ image, playlist, trackCovers, onReset }: MosaicProps) {
-  const total = COLS * ROWS;
-  const tileUrls = trackCovers.map((t) => t.url);
+  const [grid, setGrid] = useState<{ cols: number; rows: number } | null>(null);
+  const handleGrid = useCallback((g: { cols: number; rows: number }) => setGrid(g), []);
+
+  const total = grid ? grid.cols * grid.rows : 0;
 
   const stats = [
-    { label: 'Tiles', value: `${total.toLocaleString()}` },
-    { label: 'Unique artworks', value: `${tileUrls.length}` },
-    { label: 'Resolution', value: `${COLS * 30}×${ROWS * 30}px` },
+    { label: 'Grid', value: grid ? `${grid.cols} × ${grid.rows}` : '—' },
+    { label: 'Tiles', value: total ? total.toLocaleString() : '—' },
+    { label: 'Unique artwork', value: `${trackCovers.length}` },
     { label: 'Playlist', value: playlist.artist },
   ];
 
@@ -37,7 +40,7 @@ export function Mosaic({ image, playlist, trackCovers, onReset }: MosaicProps) {
 
       {/* Mosaic */}
       <div className="flex justify-center mb-6">
-        <MosaicGrid image={image} tileUrls={tileUrls} cols={COLS} rows={ROWS} />
+        <MosaicGrid image={image} tiles={trackCovers} resolution={RESOLUTION} onGrid={handleGrid} />
       </div>
 
       {/* Stats strip */}

@@ -256,6 +256,7 @@ export function useMosaifyWizard(): MosaifyWizard {
         };
       case 'mosaic':
         if (selectedImage && selectedPlaylist) {
+          console.log({ step, image: selectedImage, playlist: selectedPlaylist, trackCovers });
           return { step, image: selectedImage, playlist: selectedPlaylist, trackCovers };
         }
         // Invariant: `mosaic` (index 3) is only reachable via confirmImage /
