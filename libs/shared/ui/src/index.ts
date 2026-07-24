@@ -1,6 +1,7 @@
 export * from './lib/icon-size';
 export * from './lib/loading';
 export * from './lib/button';
+export * from './lib/button-group';
 export * from './lib/input';
 export * from './lib/use-image-upload';
 export * from './lib/upload-zone';

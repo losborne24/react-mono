@@ -2,9 +2,10 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { PointerEvent as ReactPointerEvent, ReactNode } from 'react';
 import { IconPlus, IconMinus, IconMaximize } from '@tabler/icons-react';
 import type { SourceImage } from '@react-mono/models';
+import { Button, ButtonGroup } from '@react-mono/shared-ui';
 
 const MIN_SCALE = 1;
-const MAX_SCALE = 80;
+const MAX_SCALE = 150;
 const ZOOM_SENSITIVITY = 0.01;
 /** Multiplier per +/− button press. */
 const ZOOM_STEP = 1.8;
@@ -122,13 +123,57 @@ interface MatchedCell {
   rgb: RGB;
 }
 
-/** Nearest tile (by average colour) for each sampled cell. */
-function matchTiles(grid: RGB[], tiles: SourceImage[]): MatchedCell[] {
-  const swatches = tiles
-    .map((t) => ({ url: t.url, rgb: parseRgb(t.color) }))
-    .filter((s): s is MatchedCell => s.rgb !== null);
-  if (!swatches.length) return [];
+/** CIELAB colour — perceptually uniform, so euclidean distance ≈ perceived difference. */
+type Lab = [number, number, number];
 
+/** sRGB (0–255) → CIELAB, via linearised RGB and the D65 XYZ space. */
+function rgbToLab([r, g, b]: RGB): Lab {
+  const lin = (c: number) => {
+    const s = c / 255;
+    return s <= 0.04045 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+  };
+  const rl = lin(r);
+  const gl = lin(g);
+  const bl = lin(b);
+  // Linear RGB → XYZ (D65), then normalise by the reference white.
+  const x = (rl * 0.4124 + gl * 0.3576 + bl * 0.1805) / 0.95047;
+  const y = rl * 0.2126 + gl * 0.7152 + bl * 0.0722;
+  const z = (rl * 0.0193 + gl * 0.1192 + bl * 0.9505) / 1.08883;
+  const f = (t: number) => (t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116);
+  const fx = f(x);
+  const fy = f(y);
+  const fz = f(z);
+  return [116 * fy - 16, 500 * (fx - fy), 200 * (fy - fz)];
+}
+
+/** Squared euclidean distance between two Lab colours. */
+function labDist2(a: Lab, b: Lab): number {
+  const dl = a[0] - b[0];
+  const da = a[1] - b[1];
+  const db = a[2] - b[2];
+  return dl * dl + da * da + db * db;
+}
+
+interface Swatch {
+  url: string;
+  rgb: RGB;
+  lab: Lab;
+}
+
+/** Parse tiles into colour swatches, dropping any without a readable average colour. */
+function toSwatches(tiles: SourceImage[]): Swatch[] {
+  return tiles
+    .map((t) => {
+      const rgb = parseRgb(t.color);
+      return rgb ? { url: t.url, rgb, lab: rgbToLab(rgb) } : null;
+    })
+    .filter((s): s is Swatch => s !== null);
+}
+
+/** Nearest tile by raw RGB distance. Fast, but perceptually uneven. */
+function matchNearestRgb(grid: RGB[], tiles: SourceImage[]): MatchedCell[] {
+  const swatches = toSwatches(tiles);
+  if (!swatches.length) return [];
   return grid.map((cell) => {
     let best = swatches[0];
     let bestDist = dist2(cell, best.rgb);
@@ -139,9 +184,71 @@ function matchTiles(grid: RGB[], tiles: SourceImage[]): MatchedCell[] {
         bestDist = d;
       }
     }
-    return best;
+    return { url: best.url, rgb: best.rgb };
   });
 }
+
+/** Nearest tile in CIELAB space — matches how the eye judges colour difference. */
+function matchPerceptual(grid: RGB[], tiles: SourceImage[]): MatchedCell[] {
+  const swatches = toSwatches(tiles);
+  if (!swatches.length) return [];
+  return grid.map((cell) => {
+    const cellLab = rgbToLab(cell);
+    let best = swatches[0];
+    let bestDist = labDist2(cellLab, best.lab);
+    for (let i = 1; i < swatches.length; i++) {
+      const d = labDist2(cellLab, swatches[i].lab);
+      if (d < bestDist) {
+        best = swatches[i];
+        bestDist = d;
+      }
+    }
+    return { url: best.url, rgb: best.rgb };
+  });
+}
+
+/**
+ * Perceptual match with a usage penalty: each pick adds a growing cost to that
+ * tile, so heavily-reused tiles get nudged aside for near-ties. Spreads the album
+ * artwork across the mosaic instead of stamping one dominant cover everywhere.
+ */
+function matchVariety(grid: RGB[], tiles: SourceImage[]): MatchedCell[] {
+  const swatches = toSwatches(tiles);
+  if (!swatches.length) return [];
+  // Penalty scaled to Lab distances (~0–100²): a few reuses ≈ a small colour shift.
+  const PENALTY = 40;
+  const uses = new Array(swatches.length).fill(0);
+  return grid.map((cell) => {
+    const cellLab = rgbToLab(cell);
+    let bestIdx = 0;
+    let bestCost = labDist2(cellLab, swatches[0].lab) + uses[0] * PENALTY;
+    for (let i = 1; i < swatches.length; i++) {
+      const cost = labDist2(cellLab, swatches[i].lab) + uses[i] * PENALTY;
+      if (cost < bestCost) {
+        bestIdx = i;
+        bestCost = cost;
+      }
+    }
+    uses[bestIdx]++;
+    return { url: swatches[bestIdx].url, rgb: swatches[bestIdx].rgb };
+  });
+}
+
+/** A cell→tile matching strategy. More can be added; the toggle switches between them. */
+type MatchAlgorithm = (grid: RGB[], tiles: SourceImage[]) => MatchedCell[];
+
+interface MatchOption {
+  id: string;
+  label: string;
+  match: MatchAlgorithm;
+}
+
+/** Available matching algorithms, in toggle order. */
+const MATCH_OPTIONS: MatchOption[] = [
+  { id: 'perceptual', label: 'Perceptual', match: matchPerceptual },
+  { id: 'variety', label: 'Variety', match: matchVariety },
+  { id: 'rgb', label: 'RGB', match: matchNearestRgb },
+];
 
 interface MosaicData {
   cols: number;
@@ -206,10 +313,15 @@ async function paintMosaic(
   // Pass 2: decode each unique tile and stamp it into all its cells.
   for (const [url, indices] of byUrl) {
     if (isStale()) return;
-    const img = await loadImage(url);
-    if (isStale()) return;
-    if (!img) continue; // keep the avg-colour block for this tile
-    cache.set(url, img);
+    // Reuse an already-decoded tile (e.g. after an algorithm toggle) instead of
+    // re-fetching — avoids the avg-colour flash while identical bytes re-decode.
+    let img = cache.get(url) ?? null;
+    if (!img) {
+      img = await loadImage(url);
+      if (isStale()) return;
+      if (!img) continue; // keep the avg-colour block for this tile
+      cache.set(url, img);
+    }
     for (const i of indices) {
       ctx.drawImage(img, (i % cols) * cell, Math.floor(i / cols) * cell, cell, cell);
     }
@@ -306,6 +418,9 @@ function ZoomButton({ label, onClick, children }: ZoomButtonProps) {
 // derived from the image's aspect ratio (see `sampleGrid`), not fixed.
 export function MosaicGrid({ image, tiles, resolution = 22, onGrid }: MosaicGridProps) {
   const [dims, setDims] = useState<{ cols: number; rows: number } | null>(null);
+  const [algoId, setAlgoId] = useState(MATCH_OPTIONS[0].id);
+  // Sampled target grid for the current image, reused when only the algorithm changes.
+  const sampledRef = useRef<SampledGrid | null>(null);
   const frameRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -498,35 +613,54 @@ export function MosaicGrid({ image, tiles, resolution = 22, onGrid }: MosaicGrid
     applyTransform();
   }, [applyTransform]);
 
+  // Sample the target image whenever it (or the resolution) changes. Cheap enough
+  // to redo, but kept in a ref so an algorithm toggle re-matches without re-sampling.
   useEffect(() => {
     let active = true;
     resetZoom();
     setDims(null);
-    // New image invalidates prior tiles/data.
+    // New image invalidates prior sample/tiles/data.
+    sampledRef.current = null;
     tileCacheRef.current = new Map();
     dataRef.current = null;
     sampleGrid(image.url, resolution).then((sampled) => {
       if (!active || !sampled) return;
-      const cells = matchTiles(sampled.cells, tiles);
-      const { cols, rows } = sampled;
-      const data: MosaicData = { cols, rows, cells };
-      dataRef.current = data;
-      setDims({ cols, rows });
-      onGrid?.({ cols, rows });
-      // Paint after the canvas mounts with the new aspect ratio.
-      requestAnimationFrame(() => {
-        const canvas = canvasRef.current;
-        if (!active || !canvas || !cells.length) return;
-        // Refresh a settled overlay as tiles finish decoding into the cache.
-        paintMosaic(canvas, data, tileCacheRef.current, () => !active).then(() => {
-          if (active) drawDetail();
-        });
+      sampledRef.current = sampled;
+      setDims({ cols: sampled.cols, rows: sampled.rows });
+      onGrid?.({ cols: sampled.cols, rows: sampled.rows });
+    });
+    return () => {
+      active = false;
+    };
+  }, [image.url, resolution, onGrid, resetZoom]);
+
+  // Match tiles with the selected algorithm and paint. Re-runs on algorithm/tile
+  // change; decoded tiles reset since a new matching yields different cells.
+  useEffect(() => {
+    let active = true;
+    const sampled = sampledRef.current;
+    if (!sampled) return;
+    const algo = MATCH_OPTIONS.find((o) => o.id === algoId) ?? MATCH_OPTIONS[0];
+    const cells = algo.match(sampled.cells, tiles);
+    const { cols, rows } = sampled;
+    const data: MosaicData = { cols, rows, cells };
+    dataRef.current = data;
+    // Keep the decoded-tile cache: the tile set is identical across algorithms,
+    // only the cell→tile mapping changes. Dropping it forces a full re-decode and
+    // flashes the mosaic back to avg-colour blocks on every toggle.
+    // Paint after the canvas mounts with the new aspect ratio.
+    requestAnimationFrame(() => {
+      const canvas = canvasRef.current;
+      if (!active || !canvas || !cells.length) return;
+      // Refresh a settled overlay as tiles finish decoding into the cache.
+      paintMosaic(canvas, data, tileCacheRef.current, () => !active).then(() => {
+        if (active) drawDetail();
       });
     });
     return () => {
       active = false;
     };
-  }, [image.url, tiles, resolution, onGrid, resetZoom, drawDetail]);
+  }, [algoId, tiles, dims, drawDetail]);
 
   // Cancel any pending frame on unmount. Reset the ref too: without this a
   // StrictMode double-mount leaves rafRef stuck non-null, so every later
@@ -546,64 +680,78 @@ export function MosaicGrid({ image, tiles, resolution = 22, onGrid }: MosaicGrid
   const hasMosaic = dims !== null;
 
   return (
-    <div
-      ref={frameRef}
-      className="relative overflow-hidden rounded-2xl shadow-2xl touch-none select-none"
-      style={{
-        width: '100%',
-        maxWidth: 660,
-        aspectRatio: `${cols}/${rows}`,
-        cursor: 'zoom-in',
-      }}
-      onPointerDown={handlePointerDown}
-      onPointerMove={handlePointerMove}
-      onPointerUp={endDrag}
-      onPointerCancel={endDrag}
-      onDoubleClick={resetZoom}
-    >
-      <div ref={contentRef} className="absolute inset-0" style={{ transformOrigin: 'center' }}>
-        {/* One canvas replaces ~40k <img> nodes; painted imperatively in the effect. */}
-        <canvas
-          ref={canvasRef}
-          className="absolute inset-0 w-full h-full"
-          style={{ imageRendering: 'auto', display: hasMosaic ? 'block' : 'none' }}
-        />
-        {!hasMosaic && (
-          // Colours still resolving (or unreadable) — show the target as a placeholder.
-          <img
-            src={image.url}
-            alt={image.label}
-            className="absolute inset-0 w-full h-full object-cover"
-            draggable={false}
-          />
-        )}
-      </div>
-      {/* Crisp overlay: visible cells re-rasterized at device res on zoom-settle.
-          Not transformed — maps the visible slice straight into frame pixels. */}
-      <canvas
-        ref={detailRef}
-        className="absolute inset-0 w-full h-full pointer-events-none"
-        style={{ opacity: 0, transition: 'opacity 0ms ease-out' }}
-      />
-      {/* Subtle vignette */}
+    <div className="flex w-full flex-col items-center gap-3" style={{ maxWidth: 660 }}>
+      <ButtonGroup aria-label="Matching algorithm">
+        {MATCH_OPTIONS.map((opt) => (
+          <Button
+            key={opt.id}
+            type="button"
+            size="sm"
+            variant={opt.id === algoId ? 'default' : 'outline'}
+            aria-pressed={opt.id === algoId}
+            onClick={() => setAlgoId(opt.id)}
+          >
+            {opt.label}
+          </Button>
+        ))}
+      </ButtonGroup>
       <div
-        className="absolute inset-0 pointer-events-none"
+        ref={frameRef}
+        className="relative w-full overflow-hidden rounded-2xl shadow-2xl touch-none select-none"
         style={{
-          background: 'radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.4) 100%)',
+          aspectRatio: `${cols}/${rows}`,
+          cursor: 'zoom-in',
         }}
-      />
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={endDrag}
+        onPointerCancel={endDrag}
+        onDoubleClick={resetZoom}
+      >
+        <div ref={contentRef} className="absolute inset-0" style={{ transformOrigin: 'center' }}>
+          {/* One canvas replaces ~40k <img> nodes; painted imperatively in the effect. */}
+          <canvas
+            ref={canvasRef}
+            className="absolute inset-0 w-full h-full"
+            style={{ imageRendering: 'auto', display: hasMosaic ? 'block' : 'none' }}
+          />
+          {!hasMosaic && (
+            // Colours still resolving (or unreadable) — show the target as a placeholder.
+            <img
+              src={image.url}
+              alt={image.label}
+              className="absolute inset-0 w-full h-full object-cover"
+              draggable={false}
+            />
+          )}
+        </div>
+        {/* Crisp overlay: visible cells re-rasterized at device res on zoom-settle.
+          Not transformed — maps the visible slice straight into frame pixels. */}
+        <canvas
+          ref={detailRef}
+          className="absolute inset-0 w-full h-full pointer-events-none"
+          style={{ opacity: 0, transition: 'opacity 0ms ease-out' }}
+        />
+        {/* Subtle vignette */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: 'radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.4) 100%)',
+          }}
+        />
 
-      {/* Zoom controls */}
-      <div className="absolute bottom-3 right-3 flex flex-col gap-1 rounded-xl border border-white/10 bg-black/50 p-1 backdrop-blur-sm">
-        <ZoomButton label="Zoom in" onClick={() => zoomByStep(ZOOM_STEP)}>
-          <IconPlus size={16} />
-        </ZoomButton>
-        <ZoomButton label="Zoom out" onClick={() => zoomByStep(1 / ZOOM_STEP)}>
-          <IconMinus size={16} />
-        </ZoomButton>
-        <ZoomButton label="Reset zoom" onClick={resetZoom}>
-          <IconMaximize size={16} />
-        </ZoomButton>
+        {/* Zoom controls */}
+        <div className="absolute bottom-3 right-3 flex flex-col gap-1 rounded-xl border border-white/10 bg-black/50 p-1 backdrop-blur-sm">
+          <ZoomButton label="Zoom in" onClick={() => zoomByStep(ZOOM_STEP)}>
+            <IconPlus size={16} />
+          </ZoomButton>
+          <ZoomButton label="Zoom out" onClick={() => zoomByStep(1 / ZOOM_STEP)}>
+            <IconMinus size={16} />
+          </ZoomButton>
+          <ZoomButton label="Reset zoom" onClick={resetZoom}>
+            <IconMaximize size={16} />
+          </ZoomButton>
+        </div>
       </div>
     </div>
   );
