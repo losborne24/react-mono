@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { PointerEvent as ReactPointerEvent, ReactNode } from 'react';
-import { IconPlus, IconMinus, IconMaximize } from '@tabler/icons-react';
+import { IconPlus, IconMinus, IconZoomReset } from '@tabler/icons-react';
 import type { SourceImage } from '@react-mono/models';
 import { Button, ButtonGroup } from '@react-mono/shared-ui';
 
@@ -489,7 +489,7 @@ export function MosaicGrid({ image, tiles, resolution = 22, onGrid }: MosaicGrid
           ? dragRef.current
             ? 'grabbing'
             : 'grab'
-          : 'zoom-in';
+          : 'default';
       }
     });
   }, [drawDetail]);
@@ -700,7 +700,7 @@ export function MosaicGrid({ image, tiles, resolution = 22, onGrid }: MosaicGrid
         className="relative w-full overflow-hidden rounded-2xl shadow-2xl touch-none select-none"
         style={{
           aspectRatio: `${cols}/${rows}`,
-          cursor: 'zoom-in',
+          cursor: 'default',
         }}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
@@ -749,7 +749,7 @@ export function MosaicGrid({ image, tiles, resolution = 22, onGrid }: MosaicGrid
             <IconMinus size={16} />
           </ZoomButton>
           <ZoomButton label="Reset zoom" onClick={resetZoom}>
-            <IconMaximize size={16} />
+            <IconZoomReset size={16} />
           </ZoomButton>
         </div>
       </div>
