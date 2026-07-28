@@ -23,27 +23,69 @@ const MAX_CANVAS_DIM = 4096;
  * screen. Sized to stay within browsers' max canvas dimension.
  */
 
-/** Target px per exported tile. */
-const EXPORT_CELL = 256;
 /**
- * Hard cap on the longer edge of the exported bitmap. 8192 keeps the raster ~67MP: JPEG
- * encodes in ~2.4s at ~1MB (measured). A 16k canvas is ~264MP and encodes far slower.
+ * Target px per exported tile. Spotify album art is served at 640px (images[0]), so
+ * up to ~640 is real detail, not upscaling. 512 captures most of it while staying
+ * comfortably under EXPORT_MAX_DIM for typical grids; dense grids clamp down via the
+ * dim/area caps in exportCell.
+ */
+const EXPORT_CELL = 512;
+/**
+ * Hard cap on the longer edge of the exported bitmap. 12288 lets a default ~22-res grid
+ * reach the full 512px/tile; the raster tops out ~150MP, encoding in ~5s (extrapolated
+ * from the measured 67MP/2.4s at 8192px). A 16k canvas is ~264MP and encodes far slower.
  * The SVG export is the path for full-detail tiles beyond this.
  */
-const EXPORT_MAX_DIM = 8192;
+const EXPORT_MAX_DIM = 12288;
 
 /** Safety valve so huge/near-square grids can't allocate a canvas the browser rejects. */
-const EXPORT_MAX_AREA = 8192 * 8192;
+const EXPORT_MAX_AREA = 12288 * 12288;
 
 /**
  * Per-tile pixel size for the SVG export. Unlike the PNG, the SVG stores each unique
  * cover once and references it per cell, so this size never hits a canvas ceiling —
- * every tile is full-detail regardless of how many tiles the grid has.
+ * every tile is full-detail regardless of how many tiles the grid has. 512 matches the
+ * raster's per-tile target and stays within Spotify's 640px source art (real detail,
+ * not upscaling); cost scales with the unique-track count, not the cell count.
  */
-const SVG_TILE_PX = 256;
+const SVG_TILE_PX = 512;
 
-/** JPEG quality for tiles embedded in the SVG — balances crispness against file size. */
+/** JPEG quality for tiles embedded in the SVG/PDF — balances crispness against file size. */
 const SVG_TILE_QUALITY = 0.82;
+
+/**
+ * Upper bound on per-tile pixel size for the PDF export. Like the SVG, the PDF embeds
+ * each unique cover once (as a JPEG image XObject) and references it per cell, so per-tile
+ * detail is independent of grid density and never hits a canvas ceiling. The actual size
+ * is derived per-render from the cell's physical size (see PDF_TARGET_DPI) and only
+ * reaches this cap for sparse grids with large tiles.
+ */
+const PDF_TILE_PX = 256;
+
+/**
+ * Print resolution the embedded covers target. A tile spanning `cellPt` points needs only
+ * `cellPt/72 * DPI` px to hit this DPI, so dense grids (tiny tiles) embed far smaller
+ * JPEGs than the 256px cap — cutting encode time, viewer decode time, and file size with
+ * no visible loss at print size. 300 is the print standard; raise it for more on-screen
+ * zoom detail at the cost of a heavier file.
+ */
+const PDF_TARGET_DPI = 300;
+
+/** Floor on the derived tile px, so even the tiniest cells keep a legible cover. */
+const PDF_MIN_TILE_PX = 96;
+
+/** Max unique covers encoded to JPEG concurrently during a PDF export. */
+const PDF_ENCODE_CONCURRENCY = 8;
+
+/**
+ * Largest page edge (PDF points, 1pt = 1/72") we'll emit. The classic PDF limit is
+ * 14400pt (200"); staying under it keeps every viewer happy. Cell size derives from
+ * this cap; the embedded images stay full-res regardless.
+ */
+const PDF_MAX_PAGE_PT = 14400;
+
+/** Cap a cell at 1 inch so sparse grids don't produce an absurdly large page. */
+const PDF_MAX_CELL_PT = 72;
 
 /**
  * Quality for the flat raster JPEG export. Kept below 0.9 so Chrome uses 4:2:0 chroma
@@ -104,9 +146,14 @@ export interface MosaicGridHandle {
   toBlob: () => Promise<Blob | null>;
   /**
    * The mosaic as a self-contained SVG that embeds each unique cover once — full
-   * 256px per tile at any density. `null` if the mosaic isn't painted yet.
+   * 512px per tile at any density. `null` if the mosaic isn't painted yet.
    */
   toSvg: () => Promise<Blob | null>;
+  /**
+   * The mosaic as a print-ready PDF that embeds each unique cover once (sized to the
+   * cell's print DPI) and references it per cell. `null` if not painted yet.
+   */
+  toPdf: () => Promise<Blob | null>;
 }
 
 type RGB = [number, number, number];
@@ -468,8 +515,12 @@ async function renderExport(data: MosaicData, cache: TileCache): Promise<HTMLCan
   return canvas;
 }
 
-/** Decode a tile, draw it to a `size`px square, and return a JPEG data URI (or null). */
-async function encodeTile(url: string, cache: TileCache, size: number): Promise<string | null> {
+/** Decode a tile and draw it onto a fresh `size`px square canvas (or null on failure). */
+async function drawTile(
+  url: string,
+  cache: TileCache,
+  size: number,
+): Promise<HTMLCanvasElement | null> {
   let img = cache.get(url) ?? null;
   if (!img) {
     img = await loadImage(url);
@@ -484,15 +535,196 @@ async function encodeTile(url: string, cache: TileCache, size: number): Promise<
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = 'high';
   ctx.drawImage(img, 0, 0, size, size);
-  return canvas.toDataURL('image/jpeg', SVG_TILE_QUALITY);
+  return canvas;
+}
+
+/** Decode a tile, draw it to a `size`px square, and return a JPEG data URI (or null). */
+async function encodeTile(url: string, cache: TileCache, size: number): Promise<string | null> {
+  const canvas = await drawTile(url, cache, size);
+  return canvas ? canvas.toDataURL('image/jpeg', SVG_TILE_QUALITY) : null;
+}
+
+/** Decode a tile to a `size`px JPEG's raw bytes, for embedding in the PDF (or null). */
+async function encodeTileBytes(
+  url: string,
+  cache: TileCache,
+  size: number,
+): Promise<Uint8Array<ArrayBuffer> | null> {
+  const canvas = await drawTile(url, cache, size);
+  if (!canvas) return null;
+  const blob = await canvasToBlob(canvas, 'image/jpeg', SVG_TILE_QUALITY);
+  return blob ? new Uint8Array(await blob.arrayBuffer()) : null;
+}
+
+/**
+ * Zlib-deflate `bytes` for a PDF FlateDecode stream, using the platform
+ * CompressionStream. Returns `null` when it's unavailable so the caller can fall
+ * back to an uncompressed stream.
+ */
+async function deflate(bytes: Uint8Array<ArrayBuffer>): Promise<Uint8Array<ArrayBuffer> | null> {
+  if (typeof CompressionStream === 'undefined') return null;
+  try {
+    const stream = new Blob([bytes]).stream().pipeThrough(new CompressionStream('deflate'));
+    return new Uint8Array(await new Response(stream).arrayBuffer());
+  } catch {
+    return null;
+  }
+}
+
+/** Run `task` over `items` with at most `limit` in flight; results keep input order. */
+async function mapPool<T, R>(
+  items: T[],
+  limit: number,
+  task: (item: T, index: number) => Promise<R>,
+): Promise<R[]> {
+  const results = new Array<R>(items.length);
+  let next = 0;
+  const worker = async () => {
+    while (next < items.length) {
+      const i = next++;
+      results[i] = await task(items[i], i);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+  return results;
+}
+
+/**
+ * Serialise the mosaic as a PDF. Each *unique* cover is embedded once as a JPEG
+ * image XObject and drawn per cell from a single content stream, so — like the SVG —
+ * file size scales with the unique-track count, not the cell count, and every tile keeps
+ * full detail at any density. Cells that fail to decode fall back to an avg-colour rect.
+ *
+ * The page is sized in points (kept under PDF_MAX_PAGE_PT) and each cover is embedded at
+ * just the px its cell needs for PDF_TARGET_DPI, so effective resolution stays at print
+ * DPI without over-encoding. Unlike the SVG, PDF viewers and print pipelines handle these
+ * large pages gracefully.
+ */
+async function renderPdf(data: MosaicData, cache: TileCache): Promise<Blob> {
+  const { cols, rows, cells } = data;
+  const cellPt = Math.max(
+    1,
+    Math.min(PDF_MAX_CELL_PT, Math.floor(PDF_MAX_PAGE_PT / Math.max(cols, rows))),
+  );
+  const pageW = cols * cellPt;
+  const pageH = rows * cellPt;
+
+  // Embed covers only as large as this cell's print size needs — dense grids (tiny cells)
+  // get much smaller JPEGs than the cap, so viewers decode far less on open.
+  const tilePx = Math.min(
+    PDF_TILE_PX,
+    Math.max(PDF_MIN_TILE_PX, Math.round((cellPt / 72) * PDF_TARGET_DPI)),
+  );
+
+  // Unique covers in first-seen order → embedded once each; keep the avg-colour fallback.
+  const uidFor = new Map<string, number>();
+  const rgbFor: RGB[] = [];
+  for (const c of cells) {
+    if (uidFor.has(c.url)) continue;
+    uidFor.set(c.url, uidFor.size);
+    rgbFor.push(c.rgb);
+  }
+
+  // Encode each unique cover in parallel; a null slot means we draw its avg-colour block.
+  const jpegs = await mapPool([...uidFor.keys()], PDF_ENCODE_CONCURRENCY, (url) =>
+    encodeTileBytes(url, cache, tilePx),
+  );
+
+  // Objects: 1 catalog, 2 pages, 3 page, then one per encoded cover, then the content.
+  const imageObj = new Map<number, number>(); // unique index → PDF object number
+  let nextObj = 4;
+  jpegs.forEach((bytes, ui) => {
+    if (bytes) imageObj.set(ui, nextObj++);
+  });
+  const contentObj = nextObj++;
+  const objCount = nextObj - 1;
+
+  // Content stream: place each cell. PDF's origin is bottom-left, so flip rows.
+  const ops: string[] = new Array(cells.length);
+  for (let i = 0; i < cells.length; i++) {
+    const x = (i % cols) * cellPt;
+    const y = pageH - (Math.floor(i / cols) + 1) * cellPt;
+    const ui = uidFor.get(cells[i].url) as number;
+    if (imageObj.has(ui)) {
+      ops[i] = `q ${cellPt} 0 0 ${cellPt} ${x} ${y} cm /Im${ui} Do Q`;
+    } else {
+      const [r, g, b] = rgbFor[ui];
+      const c = (v: number) => (v / 255).toFixed(3);
+      ops[i] = `q ${c(r)} ${c(g)} ${c(b)} rg ${x} ${y} ${cellPt} ${cellPt} re f Q`;
+    }
+  }
+  const rawContent = new TextEncoder().encode(ops.join('\n'));
+  const packed = await deflate(rawContent);
+  const contentBytes = packed ?? rawContent;
+
+  // Assemble the file as bytes (image streams are binary), tracking object offsets.
+  const enc = new TextEncoder();
+  const parts: Uint8Array<ArrayBuffer>[] = [];
+  const offsets = new Array<number>(objCount + 1).fill(0); // 1-indexed by object number
+  let offset = 0;
+  const put = (bytes: Uint8Array<ArrayBuffer>) => {
+    parts.push(bytes);
+    offset += bytes.length;
+  };
+  const putStr = (s: string) => put(enc.encode(s));
+  const startObj = (n: number) => {
+    offsets[n] = offset;
+  };
+
+  putStr('%PDF-1.5\n');
+  put(new Uint8Array([0x25, 0xe2, 0xe3, 0xcf, 0xd3, 0x0a])); // binary marker
+
+  startObj(1);
+  putStr('1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n');
+  startObj(2);
+  putStr('2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n');
+
+  let xobjRes = '';
+  imageObj.forEach((objNum, ui) => {
+    xobjRes += `/Im${ui} ${objNum} 0 R `;
+  });
+  startObj(3);
+  putStr(
+    `3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageW} ${pageH}] ` +
+      `/Resources << /XObject << ${xobjRes}>> >> /Contents ${contentObj} 0 R >>\nendobj\n`,
+  );
+
+  jpegs.forEach((bytes, ui) => {
+    if (!bytes) return;
+    const objNum = imageObj.get(ui) as number;
+    startObj(objNum);
+    putStr(
+      `${objNum} 0 obj\n<< /Type /XObject /Subtype /Image /Width ${tilePx} ` +
+        `/Height ${tilePx} /ColorSpace /DeviceRGB /BitsPerComponent 8 ` +
+        `/Filter /DCTDecode /Length ${bytes.length} >>\nstream\n`,
+    );
+    put(bytes);
+    putStr('\nendstream\nendobj\n');
+  });
+
+  startObj(contentObj);
+  const filter = packed ? ' /Filter /FlateDecode' : '';
+  putStr(`${contentObj} 0 obj\n<<${filter} /Length ${contentBytes.length} >>\nstream\n`);
+  put(contentBytes);
+  putStr('\nendstream\nendobj\n');
+
+  const xrefAt = offset;
+  let xref = `xref\n0 ${objCount + 1}\n0000000000 65535 f \n`;
+  for (let n = 1; n <= objCount; n++) {
+    xref += `${offsets[n].toString().padStart(10, '0')} 00000 n \n`;
+  }
+  putStr(xref);
+  putStr(`trailer\n<< /Size ${objCount + 1} /Root 1 0 R >>\nstartxref\n${xrefAt}\n%%EOF\n`);
+
+  return new Blob(parts, { type: 'application/pdf' });
 }
 
 /**
  * Serialise the mosaic as a self-contained SVG. Each *unique* cover is embedded once
- * in <defs> (as a 256px JPEG data URI) and referenced by a lightweight <use> per cell,
+ * in <defs> (as a 512px JPEG data URI) and referenced by a lightweight <use> per cell,
  * so file size scales with the number of unique tiles, not the cell count. Because the
  * tiles are referenced rather than rasterised into one bitmap, every cell stays full
- * 256px detail no matter the grid density — sidestepping the PNG's canvas-size ceiling.
+ * 512px detail no matter the grid density — sidestepping the PNG's canvas-size ceiling.
  *
  * Caveat: a viewer still rasterises the whole thing to display it, so very dense grids
  * (e.g. 512²) may be slow or refuse to open at full size — this is an archival artifact.
@@ -908,6 +1140,11 @@ export const MosaicGrid = forwardRef<MosaicGridHandle, MosaicGridProps>(function
         const data = dataRef.current;
         if (!data || !hasMosaic) return null;
         return renderSvg(data, tileCacheRef.current);
+      },
+      toPdf: async () => {
+        const data = dataRef.current;
+        if (!data || !hasMosaic) return null;
+        return renderPdf(data, tileCacheRef.current);
       },
     }),
     [hasMosaic],

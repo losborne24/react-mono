@@ -1,5 +1,11 @@
 import { useCallback, useRef, useState } from 'react';
-import { IconDownload, IconFileTypeSvg, IconShare2, IconRefresh } from '@tabler/icons-react';
+import {
+  IconDownload,
+  IconFileTypeSvg,
+  IconFileTypePdf,
+  IconShare2,
+  IconRefresh,
+} from '@tabler/icons-react';
 import type { Playlist, SourceImage } from '@react-mono/models';
 import {
   MosaicGrid,
@@ -100,7 +106,7 @@ export function Mosaic({ image, playlist, trackCovers, onReset }: MosaicProps) {
   const [algorithm, setAlgorithm] = useState<string>(DEFAULT_MATCH_ALGORITHM);
   const handleGrid = useCallback((g: { cols: number; rows: number }) => setGrid(g), []);
   const gridRef = useRef<MosaicGridHandle>(null);
-  const [busy, setBusy] = useState<'download' | 'svg' | 'share' | null>(null);
+  const [busy, setBusy] = useState<'download' | 'svg' | 'pdf' | 'share' | null>(null);
 
   const baseName = `mosaify-${slugify(playlist.title)}`;
 
@@ -112,10 +118,17 @@ export function Mosaic({ image, playlist, trackCovers, onReset }: MosaicProps) {
   }, [baseName]);
 
   const handleExportSvg = useCallback(async () => {
-    // Dedup export: each unique cover embedded once, full 256px per tile at any density.
+    // Dedup export: each unique cover embedded once, full 512px per tile at any density.
     const blob = await gridRef.current?.toSvg();
     if (!blob) return;
     saveBlob(blob, `${baseName}.svg`);
+  }, [baseName]);
+
+  const handleExportPdf = useCallback(async () => {
+    // Print-ready dedup export: each cover embedded once at 512px, referenced per cell.
+    const blob = await gridRef.current?.toPdf();
+    if (!blob) return;
+    saveBlob(blob, `${baseName}.pdf`);
   }, [baseName]);
 
   const handleShare = useCallback(async () => {
@@ -141,7 +154,7 @@ export function Mosaic({ image, playlist, trackCovers, onReset }: MosaicProps) {
   }, [baseName, image.label, playlist.title, handleDownload]);
 
   const runAction = useCallback(
-    (action: 'download' | 'svg' | 'share', fn: () => Promise<void>) => {
+    (action: 'download' | 'svg' | 'pdf' | 'share', fn: () => Promise<void>) => {
       if (busy) return;
       setBusy(action);
       fn().finally(() => setBusy(null));
@@ -157,6 +170,11 @@ export function Mosaic({ image, playlist, trackCovers, onReset }: MosaicProps) {
   const onExportSvg = useCallback(
     () => runAction('svg', handleExportSvg),
     [runAction, handleExportSvg],
+  );
+
+  const onExportPdf = useCallback(
+    () => runAction('pdf', handleExportPdf),
+    [runAction, handleExportPdf],
   );
 
   const onShare = useCallback(() => runAction('share', handleShare), [runAction, handleShare]);
@@ -240,10 +258,21 @@ export function Mosaic({ image, playlist, trackCovers, onReset }: MosaicProps) {
           className="rounded-xl"
           disabled={!grid || busy !== null}
           onClick={onExportSvg}
-          title="Vector export — every tile at full 256px detail"
+          title="Vector export — every tile at full 512px detail"
         >
           <IconFileTypeSvg size={ICON_SIZE.md} />
           {busy === 'svg' ? 'Exporting…' : 'SVG'}
+        </Button>
+        <Button
+          variant="outline"
+          size="lg"
+          className="rounded-xl"
+          disabled={!grid || busy !== null}
+          onClick={onExportPdf}
+          title="Print-ready PDF — every tile at full 512px detail"
+        >
+          <IconFileTypePdf size={ICON_SIZE.md} />
+          {busy === 'pdf' ? 'Exporting…' : 'PDF'}
         </Button>
         <button
           onClick={onShare}
