@@ -106,7 +106,7 @@ export function Mosaic({ image, playlist, trackCovers, onReset }: MosaicProps) {
 
   const handleDownload = useCallback(async () => {
     // Export the mosaic exactly as configured, at full per-tile crispness.
-    const blob = await gridRef.current?.toBlob('max');
+    const blob = await gridRef.current?.toBlob();
     if (!blob) return;
     saveBlob(blob, `${baseName}.${extFor(blob)}`);
   }, [baseName]);
@@ -119,8 +119,8 @@ export function Mosaic({ image, playlist, trackCovers, onReset }: MosaicProps) {
   }, [baseName]);
 
   const handleShare = useCallback(async () => {
-    // Share over the network at standard fidelity — keeps the file small enough to send.
-    const blob = await gridRef.current?.toBlob('standard');
+    // Share the full-crispness export — same bitmap as download.
+    const blob = await gridRef.current?.toBlob();
     if (!blob) return;
     const file = new File([blob], `${baseName}.${extFor(blob)}`, { type: blob.type });
     const shareData = {

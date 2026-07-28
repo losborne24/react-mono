@@ -16,33 +16,24 @@ const ZOOM_STEP = 1.8;
  */
 const MAX_CANVAS_DIM = 4096;
 /**
- * User-selectable export quality for the downloaded/shared PNG, independent of the
- * on-screen MAX_CANVAS_DIM cap. A save is a one-off (not a per-frame texture), so we
- * can afford a much bigger bitmap: each tile is stamped at up to `cell` px, with the
- * longer edge capped at `maxDim`, giving crisp album art instead of the ~20px tiles
- * seen on screen. Both presets stay within browsers' max canvas dimension.
+ * Export sizing for the downloaded/shared image, independent of the on-screen
+ * MAX_CANVAS_DIM cap. A save is a one-off (not a per-frame texture), so we can afford a
+ * much bigger bitmap: each tile is stamped at up to EXPORT_CELL px, with the longer edge
+ * capped at EXPORT_MAX_DIM, giving crisp album art instead of the ~20px tiles seen on
+ * screen. Sized to stay within browsers' max canvas dimension.
  */
-export type ExportFidelity = 'standard' | 'max';
 
-interface FidelityPreset {
-  /** Target px per tile. */
-  cell: number;
-  /** Hard cap on the longer edge of the exported bitmap. */
-  maxDim: number;
-}
-
-const FIDELITY_PRESETS: Record<ExportFidelity, FidelityPreset> = {
-  standard: { cell: 32, maxDim: 6144 },
-  // 16256 (not 16384) so the exported edge stays under WebP's 16383px encoder limit.
-  max: { cell: 256, maxDim: 16256 },
-};
-
+/** Target px per exported tile. */
+const EXPORT_CELL = 256;
 /**
- * Safety valve so huge/near-square grids can't allocate a canvas the browser rejects.
- * Matched to `max.maxDim` so a full-density "max" export lands right at the ceiling
- * while staying within WebP's 16383px-per-side limit.
+ * Hard cap on the longer edge of the exported bitmap. 8192 keeps the raster ~67MP: JPEG
+ * encodes in ~2.4s at ~1MB (measured). A 16k canvas is ~264MP and encodes far slower.
+ * The SVG export is the path for full-detail tiles beyond this.
  */
-const EXPORT_MAX_AREA = 16256 * 16256;
+const EXPORT_MAX_DIM = 8192;
+
+/** Safety valve so huge/near-square grids can't allocate a canvas the browser rejects. */
+const EXPORT_MAX_AREA = 8192 * 8192;
 
 /**
  * Per-tile pixel size for the SVG export. Unlike the PNG, the SVG stores each unique
@@ -55,20 +46,18 @@ const SVG_TILE_PX = 256;
 const SVG_TILE_QUALITY = 0.82;
 
 /**
- * Quality for the flat raster export. WebP at ~0.9 is visually near-lossless yet
- * compresses the high-frequency tile detail far better than JPEG; the JPEG fallback
- * (for browsers that can't encode WebP) stays below 0.9 so Chrome keeps 4:2:0
- * chroma subsampling instead of ballooning to 4:4:4.
+ * Quality for the flat raster JPEG export. Kept below 0.9 so Chrome uses 4:2:0 chroma
+ * subsampling (it switches to bulkier 4:4:4 at ≥0.9). JPEG — not WebP — on purpose:
+ * at these sizes the WebP encoder is 3–4× slower (~11s vs ~2.4s at 8192px, measured)
+ * for no reliable size win on high-frequency tile content.
  */
-const EXPORT_WEBP_QUALITY = 0.9;
 const EXPORT_JPEG_QUALITY = 0.8;
 
-/** Px per tile for an export at the given fidelity, clamped to the dim and area caps. */
-function exportCell(cols: number, rows: number, fidelity: ExportFidelity): number {
-  const { cell, maxDim } = FIDELITY_PRESETS[fidelity];
-  const dimCap = Math.floor(maxDim / Math.max(cols, rows));
+/** Px per exported tile, clamped to the dim and area caps. */
+function exportCell(cols: number, rows: number): number {
+  const dimCap = Math.floor(EXPORT_MAX_DIM / Math.max(cols, rows));
   const areaCap = Math.floor(Math.sqrt(EXPORT_MAX_AREA / (cols * rows)));
-  return Math.max(1, Math.min(cell, dimCap, areaCap));
+  return Math.max(1, Math.min(EXPORT_CELL, dimCap, areaCap));
 }
 /**
  * Max visible cells for a live per-frame detail redraw. Above this the drawImage
@@ -111,12 +100,8 @@ export interface MosaicGridProps {
 
 /** Imperative handle for exporting the painted mosaic (download/share). */
 export interface MosaicGridHandle {
-  /**
-   * The mosaic as a raster blob at the given fidelity — WebP where the browser can
-   * encode it, otherwise JPEG. Read `blob.type` for the actual format. `null` if the
-   * mosaic isn't painted yet.
-   */
-  toBlob: (fidelity: ExportFidelity) => Promise<Blob | null>;
+  /** The mosaic as a JPEG blob, or `null` if not painted yet. */
+  toBlob: () => Promise<Blob | null>;
   /**
    * The mosaic as a self-contained SVG that embeds each unique cover once — full
    * 256px per tile at any density. `null` if the mosaic isn't painted yet.
@@ -357,11 +342,9 @@ function canvasToBlob(
   );
 }
 
-/** Encode the export canvas as WebP (best compression), falling back to JPEG. */
+/** Encode the export canvas as JPEG — fast at these sizes and opens natively in Photos. */
 function encodeExport(canvas: HTMLCanvasElement): Promise<Blob | null> {
-  return canvasToBlob(canvas, 'image/webp', EXPORT_WEBP_QUALITY).then(
-    (webp) => webp ?? canvasToBlob(canvas, 'image/jpeg', EXPORT_JPEG_QUALITY),
-  );
+  return canvasToBlob(canvas, 'image/jpeg', EXPORT_JPEG_QUALITY);
 }
 
 /** Load an image for canvas drawing, or `null` on failure/taint. */
@@ -437,24 +420,23 @@ async function paintMosaic(
 }
 
 /**
- * Render the full mosaic to a fresh offscreen canvas at the chosen export fidelity
- * (see FIDELITY_PRESETS) for download/share. Unlike the on-screen base canvas —
- * capped low for GPU memory — this stamps each unique tile at full crispness. Reuses
- * the decoded-tile cache and decodes any stragglers so the saved image never falls
- * back to avg-colour blocks.
+ * Render the full mosaic to a fresh offscreen canvas at export size (EXPORT_CELL px per
+ * tile, capped by EXPORT_MAX_DIM/area) for download/share. Unlike the on-screen base
+ * canvas — capped low for GPU memory — this stamps each unique tile at full crispness.
+ * Reuses the decoded-tile cache and decodes any stragglers so the saved image never
+ * falls back to avg-colour blocks.
  */
-async function renderExport(
-  data: MosaicData,
-  cache: TileCache,
-  fidelity: ExportFidelity,
-): Promise<HTMLCanvasElement> {
+async function renderExport(data: MosaicData, cache: TileCache): Promise<HTMLCanvasElement> {
   const { cols, rows, cells } = data;
-  const cell = exportCell(cols, rows, fidelity);
+  const cell = exportCell(cols, rows);
   const canvas = document.createElement('canvas');
   canvas.width = cols * cell;
   canvas.height = rows * cell;
   const ctx = canvas.getContext('2d');
   if (!ctx) return canvas;
+  // High-quality resampling when tiles are scaled to the cell size (default is 'low').
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
 
   // Pass 1: average-colour blocks, so any tile that fails to decode still fills.
   for (let i = 0; i < cells.length; i++) {
@@ -499,6 +481,8 @@ async function encodeTile(url: string, cache: TileCache, size: number): Promise<
   canvas.height = size;
   const ctx = canvas.getContext('2d');
   if (!ctx) return null;
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
   ctx.drawImage(img, 0, 0, size, size);
   return canvas.toDataURL('image/jpeg', SVG_TILE_QUALITY);
 }
@@ -914,10 +898,10 @@ export const MosaicGrid = forwardRef<MosaicGridHandle, MosaicGridProps>(function
   useImperativeHandle(
     ref,
     () => ({
-      toBlob: async (fidelity) => {
+      toBlob: async () => {
         const data = dataRef.current;
         if (!data || !hasMosaic) return null;
-        const canvas = await renderExport(data, tileCacheRef.current, fidelity);
+        const canvas = await renderExport(data, tileCacheRef.current);
         return encodeExport(canvas);
       },
       toSvg: async () => {
