@@ -1,8 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import type { PointerEvent as ReactPointerEvent, ReactNode } from 'react';
 import { IconPlus, IconMinus, IconZoomReset } from '@tabler/icons-react';
 import type { SourceImage } from '@react-mono/models';
-import { Button, ButtonGroup } from '@react-mono/shared-ui';
 
 const MIN_SCALE = 1;
 const MAX_SCALE = 150;
@@ -16,6 +15,61 @@ const ZOOM_STEP = 1.8;
  * texture size and keeps tiles legible well into the zoom range.
  */
 const MAX_CANVAS_DIM = 4096;
+/**
+ * User-selectable export quality for the downloaded/shared PNG, independent of the
+ * on-screen MAX_CANVAS_DIM cap. A save is a one-off (not a per-frame texture), so we
+ * can afford a much bigger bitmap: each tile is stamped at up to `cell` px, with the
+ * longer edge capped at `maxDim`, giving crisp album art instead of the ~20px tiles
+ * seen on screen. Both presets stay within browsers' max canvas dimension.
+ */
+export type ExportFidelity = 'standard' | 'max';
+
+interface FidelityPreset {
+  /** Target px per tile. */
+  cell: number;
+  /** Hard cap on the longer edge of the exported bitmap. */
+  maxDim: number;
+}
+
+const FIDELITY_PRESETS: Record<ExportFidelity, FidelityPreset> = {
+  standard: { cell: 32, maxDim: 6144 },
+  // 16256 (not 16384) so the exported edge stays under WebP's 16383px encoder limit.
+  max: { cell: 256, maxDim: 16256 },
+};
+
+/**
+ * Safety valve so huge/near-square grids can't allocate a canvas the browser rejects.
+ * Matched to `max.maxDim` so a full-density "max" export lands right at the ceiling
+ * while staying within WebP's 16383px-per-side limit.
+ */
+const EXPORT_MAX_AREA = 16256 * 16256;
+
+/**
+ * Per-tile pixel size for the SVG export. Unlike the PNG, the SVG stores each unique
+ * cover once and references it per cell, so this size never hits a canvas ceiling —
+ * every tile is full-detail regardless of how many tiles the grid has.
+ */
+const SVG_TILE_PX = 256;
+
+/** JPEG quality for tiles embedded in the SVG — balances crispness against file size. */
+const SVG_TILE_QUALITY = 0.82;
+
+/**
+ * Quality for the flat raster export. WebP at ~0.9 is visually near-lossless yet
+ * compresses the high-frequency tile detail far better than JPEG; the JPEG fallback
+ * (for browsers that can't encode WebP) stays below 0.9 so Chrome keeps 4:2:0
+ * chroma subsampling instead of ballooning to 4:4:4.
+ */
+const EXPORT_WEBP_QUALITY = 0.9;
+const EXPORT_JPEG_QUALITY = 0.8;
+
+/** Px per tile for an export at the given fidelity, clamped to the dim and area caps. */
+function exportCell(cols: number, rows: number, fidelity: ExportFidelity): number {
+  const { cell, maxDim } = FIDELITY_PRESETS[fidelity];
+  const dimCap = Math.floor(maxDim / Math.max(cols, rows));
+  const areaCap = Math.floor(Math.sqrt(EXPORT_MAX_AREA / (cols * rows)));
+  return Math.max(1, Math.min(cell, dimCap, areaCap));
+}
 /**
  * Max visible cells for a live per-frame detail redraw. Above this the drawImage
  * cost per frame risks dropping below 60fps, so the overlay is hidden and the base
@@ -49,8 +103,25 @@ export interface MosaicGridProps {
   tiles: SourceImage[];
   /** Tile count along the image's longer edge; the shorter edge follows its aspect. */
   resolution?: number;
+  /** Selected matching-algorithm id (see MATCH_ALGORITHMS). Controlled by the parent. */
+  algorithm?: string;
   /** Reports the derived grid once the image aspect is known (for stats/labels). */
   onGrid?: (grid: { cols: number; rows: number }) => void;
+}
+
+/** Imperative handle for exporting the painted mosaic (download/share). */
+export interface MosaicGridHandle {
+  /**
+   * The mosaic as a raster blob at the given fidelity — WebP where the browser can
+   * encode it, otherwise JPEG. Read `blob.type` for the actual format. `null` if the
+   * mosaic isn't painted yet.
+   */
+  toBlob: (fidelity: ExportFidelity) => Promise<Blob | null>;
+  /**
+   * The mosaic as a self-contained SVG that embeds each unique cover once — full
+   * 256px per tile at any density. `null` if the mosaic isn't painted yet.
+   */
+  toSvg: () => Promise<Blob | null>;
 }
 
 type RGB = [number, number, number];
@@ -250,10 +321,47 @@ const MATCH_OPTIONS: MatchOption[] = [
   { id: 'rgb', label: 'RGB', match: matchNearestRgb },
 ];
 
+/** Public metadata for the matching algorithms, for a parent-rendered toggle. */
+export interface MatchAlgorithmOption {
+  id: string;
+  label: string;
+}
+
+/** Selectable algorithms (id + label), in toggle order. */
+export const MATCH_ALGORITHMS: MatchAlgorithmOption[] = MATCH_OPTIONS.map(({ id, label }) => ({
+  id,
+  label,
+}));
+
+/** Default matching algorithm id. */
+export const DEFAULT_MATCH_ALGORITHM = MATCH_OPTIONS[0].id;
+
 interface MosaicData {
   cols: number;
   rows: number;
   cells: MatchedCell[];
+}
+
+/**
+ * Encode a canvas to `type`, but only if the browser actually honoured it — some
+ * browsers silently fall back to PNG for unsupported types, so we reject a blob whose
+ * MIME doesn't match the request. Returns `null` when the type isn't encodable.
+ */
+function canvasToBlob(
+  canvas: HTMLCanvasElement,
+  type: string,
+  quality: number,
+): Promise<Blob | null> {
+  return new Promise((resolve) =>
+    canvas.toBlob((blob) => resolve(blob && blob.type === type ? blob : null), type, quality),
+  );
+}
+
+/** Encode the export canvas as WebP (best compression), falling back to JPEG. */
+function encodeExport(canvas: HTMLCanvasElement): Promise<Blob | null> {
+  return canvasToBlob(canvas, 'image/webp', EXPORT_WEBP_QUALITY).then(
+    (webp) => webp ?? canvasToBlob(canvas, 'image/jpeg', EXPORT_JPEG_QUALITY),
+  );
 }
 
 /** Load an image for canvas drawing, or `null` on failure/taint. */
@@ -326,6 +434,125 @@ async function paintMosaic(
       ctx.drawImage(img, (i % cols) * cell, Math.floor(i / cols) * cell, cell, cell);
     }
   }
+}
+
+/**
+ * Render the full mosaic to a fresh offscreen canvas at the chosen export fidelity
+ * (see FIDELITY_PRESETS) for download/share. Unlike the on-screen base canvas —
+ * capped low for GPU memory — this stamps each unique tile at full crispness. Reuses
+ * the decoded-tile cache and decodes any stragglers so the saved image never falls
+ * back to avg-colour blocks.
+ */
+async function renderExport(
+  data: MosaicData,
+  cache: TileCache,
+  fidelity: ExportFidelity,
+): Promise<HTMLCanvasElement> {
+  const { cols, rows, cells } = data;
+  const cell = exportCell(cols, rows, fidelity);
+  const canvas = document.createElement('canvas');
+  canvas.width = cols * cell;
+  canvas.height = rows * cell;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return canvas;
+
+  // Pass 1: average-colour blocks, so any tile that fails to decode still fills.
+  for (let i = 0; i < cells.length; i++) {
+    const [r, g, b] = cells[i].rgb;
+    ctx.fillStyle = `rgb(${r},${g},${b})`;
+    ctx.fillRect((i % cols) * cell, Math.floor(i / cols) * cell, cell, cell);
+  }
+
+  // Group cell indices by tile URL so each image decodes once, not once per cell.
+  const byUrl = new Map<string, number[]>();
+  for (let i = 0; i < cells.length; i++) {
+    const list = byUrl.get(cells[i].url);
+    if (list) list.push(i);
+    else byUrl.set(cells[i].url, [i]);
+  }
+
+  // Pass 2: stamp each unique tile, decoding any not already cached from viewing.
+  for (const [url, indices] of byUrl) {
+    let img = cache.get(url) ?? null;
+    if (!img) {
+      img = await loadImage(url);
+      if (!img) continue; // keep the avg-colour block for this tile
+      cache.set(url, img);
+    }
+    for (const i of indices) {
+      ctx.drawImage(img, (i % cols) * cell, Math.floor(i / cols) * cell, cell, cell);
+    }
+  }
+  return canvas;
+}
+
+/** Decode a tile, draw it to a `size`px square, and return a JPEG data URI (or null). */
+async function encodeTile(url: string, cache: TileCache, size: number): Promise<string | null> {
+  let img = cache.get(url) ?? null;
+  if (!img) {
+    img = await loadImage(url);
+    if (!img) return null;
+    cache.set(url, img);
+  }
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return null;
+  ctx.drawImage(img, 0, 0, size, size);
+  return canvas.toDataURL('image/jpeg', SVG_TILE_QUALITY);
+}
+
+/**
+ * Serialise the mosaic as a self-contained SVG. Each *unique* cover is embedded once
+ * in <defs> (as a 256px JPEG data URI) and referenced by a lightweight <use> per cell,
+ * so file size scales with the number of unique tiles, not the cell count. Because the
+ * tiles are referenced rather than rasterised into one bitmap, every cell stays full
+ * 256px detail no matter the grid density — sidestepping the PNG's canvas-size ceiling.
+ *
+ * Caveat: a viewer still rasterises the whole thing to display it, so very dense grids
+ * (e.g. 512²) may be slow or refuse to open at full size — this is an archival artifact.
+ */
+async function renderSvg(data: MosaicData, cache: TileCache): Promise<Blob> {
+  const { cols, rows, cells } = data;
+
+  // Unique tile URLs in first-seen order; each gets a short id and an avg-colour fallback.
+  const idFor = new Map<string, string>();
+  const rgbFor = new Map<string, RGB>();
+  for (const c of cells) {
+    if (idFor.has(c.url)) continue;
+    idFor.set(c.url, `t${idFor.size.toString(36)}`);
+    rgbFor.set(c.url, c.rgb);
+  }
+
+  // Embed each unique tile once, falling back to its average-colour block on failure.
+  const defs: string[] = [];
+  for (const [url, id] of idFor) {
+    const uri = await encodeTile(url, cache, SVG_TILE_PX);
+    if (uri) {
+      defs.push(`<image id="${id}" width="${SVG_TILE_PX}" height="${SVG_TILE_PX}" href="${uri}"/>`);
+    } else {
+      const [r, g, b] = rgbFor.get(url) as RGB;
+      defs.push(
+        `<rect id="${id}" width="${SVG_TILE_PX}" height="${SVG_TILE_PX}" fill="rgb(${r},${g},${b})"/>`,
+      );
+    }
+  }
+
+  // One positioned <use> per cell — the bulk of the file, but only ~30 bytes each.
+  const uses = new Array<string>(cells.length);
+  for (let i = 0; i < cells.length; i++) {
+    const x = (i % cols) * SVG_TILE_PX;
+    const y = Math.floor(i / cols) * SVG_TILE_PX;
+    uses[i] = `<use href="#${idFor.get(cells[i].url)}" x="${x}" y="${y}"/>`;
+  }
+
+  const w = cols * SVG_TILE_PX;
+  const h = rows * SVG_TILE_PX;
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">` +
+    `<defs>${defs.join('')}</defs>${uses.join('')}</svg>`;
+  return new Blob([svg], { type: 'image/svg+xml' });
 }
 
 /**
@@ -416,9 +643,11 @@ function ZoomButton({ label, onClick, children }: ZoomButtonProps) {
 // Photomosaic: target image sampled per cell, each cell filled with the tile
 // whose average colour is nearest to the sampled colour. The grid dimensions are
 // derived from the image's aspect ratio (see `sampleGrid`), not fixed.
-export function MosaicGrid({ image, tiles, resolution = 22, onGrid }: MosaicGridProps) {
+export const MosaicGrid = forwardRef<MosaicGridHandle, MosaicGridProps>(function MosaicGrid(
+  { image, tiles, resolution = 22, algorithm = DEFAULT_MATCH_ALGORITHM, onGrid },
+  ref,
+) {
   const [dims, setDims] = useState<{ cols: number; rows: number } | null>(null);
-  const [algoId, setAlgoId] = useState(MATCH_OPTIONS[0].id);
   // Sampled target grid for the current image, reused when only the algorithm changes.
   const sampledRef = useRef<SampledGrid | null>(null);
   const frameRef = useRef<HTMLDivElement>(null);
@@ -640,7 +869,7 @@ export function MosaicGrid({ image, tiles, resolution = 22, onGrid }: MosaicGrid
     let active = true;
     const sampled = sampledRef.current;
     if (!sampled) return;
-    const algo = MATCH_OPTIONS.find((o) => o.id === algoId) ?? MATCH_OPTIONS[0];
+    const algo = MATCH_OPTIONS.find((o) => o.id === algorithm) ?? MATCH_OPTIONS[0];
     const cells = algo.match(sampled.cells, tiles);
     const { cols, rows } = sampled;
     const data: MosaicData = { cols, rows, cells };
@@ -660,7 +889,7 @@ export function MosaicGrid({ image, tiles, resolution = 22, onGrid }: MosaicGrid
     return () => {
       active = false;
     };
-  }, [algoId, tiles, dims, drawDetail]);
+  }, [algorithm, tiles, dims, drawDetail]);
 
   // Cancel any pending frame on unmount. Reset the ref too: without this a
   // StrictMode double-mount leaves rafRef stuck non-null, so every later
@@ -679,22 +908,29 @@ export function MosaicGrid({ image, tiles, resolution = 22, onGrid }: MosaicGrid
   const rows = dims?.rows ?? resolution;
   const hasMosaic = dims !== null;
 
+  // Expose the painted mosaic for download/share. Renders a fresh high-resolution
+  // export (see renderExport) rather than reading the GPU-capped on-screen canvas,
+  // so saved tiles are crisp instead of the ~20px they appear at on screen.
+  useImperativeHandle(
+    ref,
+    () => ({
+      toBlob: async (fidelity) => {
+        const data = dataRef.current;
+        if (!data || !hasMosaic) return null;
+        const canvas = await renderExport(data, tileCacheRef.current, fidelity);
+        return encodeExport(canvas);
+      },
+      toSvg: async () => {
+        const data = dataRef.current;
+        if (!data || !hasMosaic) return null;
+        return renderSvg(data, tileCacheRef.current);
+      },
+    }),
+    [hasMosaic],
+  );
+
   return (
-    <div className="flex w-full flex-col items-center gap-3" style={{ maxWidth: 660 }}>
-      <ButtonGroup aria-label="Matching algorithm">
-        {MATCH_OPTIONS.map((opt) => (
-          <Button
-            key={opt.id}
-            type="button"
-            size="sm"
-            variant={opt.id === algoId ? 'default' : 'outline'}
-            aria-pressed={opt.id === algoId}
-            onClick={() => setAlgoId(opt.id)}
-          >
-            {opt.label}
-          </Button>
-        ))}
-      </ButtonGroup>
+    <div className="w-full" style={{ maxWidth: 660 }}>
       <div
         ref={frameRef}
         className="relative w-full overflow-hidden rounded-2xl shadow-2xl touch-none select-none"
@@ -755,6 +991,6 @@ export function MosaicGrid({ image, tiles, resolution = 22, onGrid }: MosaicGrid
       </div>
     </div>
   );
-}
+});
 
 export default MosaicGrid;
