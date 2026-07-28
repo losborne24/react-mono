@@ -1,8 +1,8 @@
 import { useCallback, useRef, useState } from 'react';
 import {
-  IconDownload,
   IconFileTypeSvg,
   IconFileTypePdf,
+  IconPhoto,
   IconShare2,
   IconRefresh,
 } from '@tabler/icons-react';
@@ -13,7 +13,7 @@ import {
   DEFAULT_MATCH_ALGORITHM,
   type MosaicGridHandle,
 } from '@react-mono/mosaify-ui';
-import { Button, ButtonGroup, ICON_SIZE } from '@react-mono/shared-ui';
+import { Button, ButtonGroup, ICON_SIZE, DownloadMenu } from '@react-mono/shared-ui';
 
 /** Selectable tile counts along the image's longer edge; shorter edge follows aspect. */
 const RESOLUTION_OPTIONS = [64, 256, 512] as const;
@@ -179,6 +179,30 @@ export function Mosaic({ image, playlist, trackCovers, onReset }: MosaicProps) {
 
   const onShare = useCallback(() => runAction('share', handleShare), [runAction, handleShare]);
 
+  const downloadItems = [
+    {
+      id: 'image',
+      icon: <IconPhoto size={ICON_SIZE.md} />,
+      label: 'Image',
+      description: 'WebP or JPEG bitmap',
+      onSelect: onDownload,
+    },
+    {
+      id: 'svg',
+      icon: <IconFileTypeSvg size={ICON_SIZE.md} />,
+      label: 'SVG',
+      description: 'Vector — full 512px per tile',
+      onSelect: onExportSvg,
+    },
+    {
+      id: 'pdf',
+      icon: <IconFileTypePdf size={ICON_SIZE.md} />,
+      label: 'PDF',
+      description: 'Print-ready — 300 DPI tiles',
+      onSelect: onExportPdf,
+    },
+  ];
+
   const total = grid ? grid.cols * grid.rows : 0;
 
   const stats = [
@@ -242,38 +266,11 @@ export function Mosaic({ image, playlist, trackCovers, onReset }: MosaicProps) {
 
       {/* Actions */}
       <div className="flex items-center gap-3">
-        <Button
-          variant="spotify"
-          size="lg"
-          className="rounded-xl"
+        <DownloadMenu
+          busy={busy !== null}
           disabled={!grid || busy !== null}
-          onClick={onDownload}
-        >
-          <IconDownload size={ICON_SIZE.md} />
-          {busy === 'download' ? 'Saving…' : 'Download'}
-        </Button>
-        <Button
-          variant="outline"
-          size="lg"
-          className="rounded-xl"
-          disabled={!grid || busy !== null}
-          onClick={onExportSvg}
-          title="Vector export — every tile at full 512px detail"
-        >
-          <IconFileTypeSvg size={ICON_SIZE.md} />
-          {busy === 'svg' ? 'Exporting…' : 'SVG'}
-        </Button>
-        <Button
-          variant="outline"
-          size="lg"
-          className="rounded-xl"
-          disabled={!grid || busy !== null}
-          onClick={onExportPdf}
-          title="Print-ready PDF — every tile at full 512px detail"
-        >
-          <IconFileTypePdf size={ICON_SIZE.md} />
-          {busy === 'pdf' ? 'Exporting…' : 'PDF'}
-        </Button>
+          items={downloadItems}
+        />
         <button
           onClick={onShare}
           disabled={!grid || busy !== null}
