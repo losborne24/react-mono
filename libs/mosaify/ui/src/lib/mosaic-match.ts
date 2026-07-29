@@ -241,7 +241,7 @@ const MATCH_OPTIONS: MatchOption[] = [
   {
     id: 'fast',
     label: 'Fast',
-    term: 'RGB Euclidean distance',
+    term: 'RGB (Euclidean Distance)',
     description:
       'Compares colours using their raw RGB values. Fastest, but least representative of human colour perception.',
     match: matchNearestRgb,

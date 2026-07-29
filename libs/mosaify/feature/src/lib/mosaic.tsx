@@ -16,7 +16,7 @@ import {
 import { Button, ButtonGroup, ICON_SIZE, DownloadMenu } from '@react-mono/shared-ui';
 
 /** Selectable tile counts along the image's longer edge; shorter edge follows aspect. */
-const RESOLUTION_OPTIONS = [64, 256, 512] as const;
+const RESOLUTION_OPTIONS = [64, 128, 256, 512] as const;
 type Resolution = (typeof RESOLUTION_OPTIONS)[number];
 const DEFAULT_RESOLUTION: Resolution = 256;
 
