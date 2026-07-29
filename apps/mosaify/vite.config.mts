@@ -3,9 +3,14 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 
-export default defineConfig(() => ({
+export default defineConfig(({ command }) => ({
   root: import.meta.dirname,
   cacheDir: '../../node_modules/.vite/apps/mosaify',
+  // GitHub Pages serves this app from a project subpath
+  // (<user>.github.io/react-mono/mosaify/). Only apply the base for the
+  // production build so local dev + the Spotify OAuth 127.0.0.1:4200 origin
+  // stay at '/'.
+  base: command === 'build' ? '/react-mono/mosaify/' : '/',
   server: {
     port: 4200,
     // Match the Spotify OAuth redirect URI origin (127.0.0.1, not localhost).
