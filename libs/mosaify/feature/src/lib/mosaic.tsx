@@ -13,7 +13,15 @@ import {
   DEFAULT_MATCH_ALGORITHM,
   type MosaicGridHandle,
 } from '@react-mono/mosaify-ui';
-import { Button, ButtonGroup, ICON_SIZE, DownloadMenu } from '@react-mono/shared-ui';
+import {
+  Button,
+  ButtonGroup,
+  ICON_SIZE,
+  DownloadMenu,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@react-mono/shared-ui';
 
 /** Selectable tile counts along the image's longer edge; shorter edge follows aspect. */
 const RESOLUTION_OPTIONS = [64, 256, 512] as const;
@@ -24,17 +32,61 @@ const RESOLUTION_TOGGLE_OPTIONS: { value: Resolution; label: string }[] = RESOLU
   (value) => ({ value, label: `${value}` }),
 );
 
-const ALGORITHM_TOGGLE_OPTIONS = MATCH_ALGORITHMS.map(({ id, label }) => ({
+const ALGORITHM_TOGGLE_OPTIONS = MATCH_ALGORITHMS.map(({ id, label, description }) => ({
   value: id,
   label,
+  tooltip: description,
 }));
+
+interface ToggleOption<T extends string | number> {
+  value: T;
+  label: string;
+  /** Optional methodology blurb shown on hover/focus. */
+  tooltip?: string;
+}
 
 interface ControlToggleProps<T extends string | number> {
   label: string;
-  options: readonly { value: T; label: string }[];
+  options: readonly ToggleOption<T>[];
   value: T;
   disabled: boolean;
   onChange: (value: T) => void;
+}
+
+interface ToggleButtonProps<T extends string | number> {
+  option: ToggleOption<T>;
+  selected: boolean;
+  disabled: boolean;
+  onSelect: (value: T) => void;
+}
+
+function ToggleButton<T extends string | number>({
+  option,
+  selected,
+  disabled,
+  onSelect,
+}: ToggleButtonProps<T>) {
+  const button = (
+    <Button
+      size="sm"
+      variant={selected ? 'secondary' : 'outline'}
+      disabled={disabled}
+      onClick={() => onSelect(option.value)}
+    >
+      {option.label}
+    </Button>
+  );
+
+  if (!option.tooltip) return button;
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{button}</TooltipTrigger>
+      <TooltipContent side="top" className="max-w-56 text-center leading-snug">
+        {option.tooltip}
+      </TooltipContent>
+    </Tooltip>
+  );
 }
 
 /** Labelled segmented control (horizontal buttons), stacked in the mosaic's side column. */
@@ -52,15 +104,13 @@ function ControlToggle<T extends string | number>({
       </span>
       <ButtonGroup>
         {options.map((option) => (
-          <Button
+          <ToggleButton
             key={String(option.value)}
-            size="sm"
-            variant={option.value === value ? 'secondary' : 'outline'}
+            option={option}
+            selected={option.value === value}
             disabled={disabled}
-            onClick={() => onChange(option.value)}
-          >
-            {option.label}
-          </Button>
+            onSelect={onChange}
+          />
         ))}
       </ButtonGroup>
     </div>

@@ -343,27 +343,46 @@ type MatchAlgorithm = (grid: RGB[], tiles: SourceImage[]) => MatchedCell[];
 interface MatchOption {
   id: string;
   label: string;
+  description: string;
   match: MatchAlgorithm;
 }
 
 /** Available matching algorithms, in toggle order. */
 const MATCH_OPTIONS: MatchOption[] = [
-  { id: 'perceptual', label: 'Perceptual', match: matchPerceptual },
-  { id: 'variety', label: 'Variety', match: matchVariety },
-  { id: 'rgb', label: 'RGB', match: matchNearestRgb },
+  {
+    id: 'perceptual',
+    label: 'Perceptual',
+    description:
+      'Picks the nearest tile in CIELAB colour space, matching how the eye judges colour difference. Most accurate colours.',
+    match: matchPerceptual,
+  },
+  {
+    id: 'variety',
+    label: 'Variety',
+    description:
+      'Perceptual matching with a reuse penalty, so no single cover dominates. Spreads the artwork across the mosaic.',
+    match: matchVariety,
+  },
+  {
+    id: 'rgb',
+    label: 'RGB',
+    description:
+      'Picks the nearest tile by raw RGB distance. Fastest, but less true to how colours are perceived.',
+    match: matchNearestRgb,
+  },
 ];
 
 /** Public metadata for the matching algorithms, for a parent-rendered toggle. */
 export interface MatchAlgorithmOption {
   id: string;
   label: string;
+  description: string;
 }
 
-/** Selectable algorithms (id + label), in toggle order. */
-export const MATCH_ALGORITHMS: MatchAlgorithmOption[] = MATCH_OPTIONS.map(({ id, label }) => ({
-  id,
-  label,
-}));
+/** Selectable algorithms (id + label + description), in toggle order. */
+export const MATCH_ALGORITHMS: MatchAlgorithmOption[] = MATCH_OPTIONS.map(
+  ({ id, label, description }) => ({ id, label, description }),
+);
 
 /** Default matching algorithm id. */
 export const DEFAULT_MATCH_ALGORITHM = MATCH_OPTIONS[0].id;

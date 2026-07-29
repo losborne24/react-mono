@@ -7,6 +7,7 @@ export * from './lib/download-menu';
 export * from './lib/input';
 export * from './lib/use-image-upload';
 export * from './lib/upload-zone';
+export * from './lib/tooltip';
 export * from './lib/stepper';
 export * from './lib/use-stepper';
 export * from './lib/use-debounced';
