@@ -33,11 +33,10 @@ jobs:
       - name: 📦 Install dependencies
         run: npm ci
 
+      # Spotify OAuth vars (public PKCE client ID + redirect URI) come from the
+      # committed apps/mosaify/.env.production, which Vite loads in build mode.
       - name: 🛠️ Build mosaify app
         run: npx nx build mosaify --configuration=production
-        env:
-          VITE_SPOTIFY_REDIRECT_URI: https://losborne24.github.io/react-mono/mosaify/
-          VITE_SPOTIFY_CLIENT_ID: ${{ secrets.VITE_SPOTIFY_CLIENT_ID }}
 
       - name: 📁 Copy built app to public-deploy/mosaify
         run: |
