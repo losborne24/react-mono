@@ -274,7 +274,7 @@ export function Mosaic({ image, playlist, trackCovers, onReset }: MosaicProps) {
       {/* Controls + mosaic */}
       <div className="flex flex-col items-center gap-6 mb-6">
         <div className="flex max-w-full flex-col gap-3 rounded-xl border border-border bg-card px-5 py-4">
-          <div className="flex items-start justify-center gap-8">
+          <div className="flex flex-col items-start justify-center gap-4 sm:flex-row sm:gap-8">
             <ControlToggle
               label="Methodology"
               options={ALGORITHM_TOGGLE_OPTIONS}
