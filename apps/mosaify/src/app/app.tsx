@@ -101,8 +101,10 @@ function WizardContent({
           onReset={handlers.reset}
         />
       );
-    default:
-      return null;
+    default: {
+      const exhaustive: never = view;
+      throw new Error(`Unhandled wizard step: ${JSON.stringify(exhaustive)}`);
+    }
   }
 }
 
