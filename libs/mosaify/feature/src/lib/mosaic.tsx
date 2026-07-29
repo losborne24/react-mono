@@ -49,8 +49,10 @@ interface ControlToggleProps<T extends string | number> {
   value: T;
   disabled: boolean;
   onChange: (value: T) => void;
-  /** Optional per-option notes, keyed by option value; shown for the hovered button. */
+  /** Optional per-option notes, keyed by option value; surfaced via onFootnote on hover. */
   footnotes?: Record<string, ToggleFootnote>;
+  /** Reports the footnote for the hovered button (or null on leave), for the parent to render. */
+  onFootnote?: (footnote: ToggleFootnote | null) => void;
 }
 
 interface ToggleButtonProps<T extends string | number> {
@@ -82,7 +84,7 @@ function ToggleButton<T extends string | number>({
   );
 }
 
-/** Labelled segmented control (horizontal buttons), stacked in the mosaic's side column. */
+/** Labelled segmented control (horizontal buttons), shown in the controls row above the mosaic. */
 function ControlToggle<T extends string | number>({
   label,
   options,
@@ -90,15 +92,18 @@ function ControlToggle<T extends string | number>({
   disabled,
   onChange,
   footnotes,
+  onFootnote,
 }: ControlToggleProps<T>) {
-  const [hovered, setHovered] = useState<T | null>(null);
-  const footnote = hovered !== null ? footnotes?.[String(hovered)] : undefined;
+  const handleHover = (hovered: T | null) => {
+    const footnote = hovered !== null ? footnotes?.[String(hovered)] ?? null : null;
+    onFootnote?.(footnote);
+  };
   return (
     <div className="flex flex-col gap-2">
       <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-medium">
         {label}
       </span>
-      <ButtonGroup>
+      <ButtonGroup orientation="horizontal">
         {options.map((option) => (
           <ToggleButton
             key={String(option.value)}
@@ -106,16 +111,10 @@ function ControlToggle<T extends string | number>({
             selected={option.value === value}
             disabled={disabled}
             onSelect={onChange}
-            onHover={setHovered}
+            onHover={handleHover}
           />
         ))}
       </ButtonGroup>
-      {footnote && (
-        <p className="max-w-56 text-[11px] leading-snug text-muted-foreground">
-          <span className="font-medium text-foreground">{footnote.term}</span> —{' '}
-          {footnote.description}
-        </p>
-      )}
     </div>
   );
 }
@@ -148,15 +147,11 @@ function saveBlob(blob: Blob, name: string): void {
   URL.revokeObjectURL(url);
 }
 
-/** File extension matching a raster blob's MIME (webp or jpeg). */
-function extFor(blob: Blob): string {
-  return blob.type === 'image/webp' ? 'webp' : 'jpg';
-}
-
 export function Mosaic({ image, playlist, trackCovers, onReset }: MosaicProps) {
   const [grid, setGrid] = useState<{ cols: number; rows: number } | null>(null);
   const [resolution, setResolution] = useState<Resolution>(DEFAULT_RESOLUTION);
   const [algorithm, setAlgorithm] = useState<string>(DEFAULT_MATCH_ALGORITHM);
+  const [hoveredFootnote, setHoveredFootnote] = useState<ToggleFootnote | null>(null);
   const handleGrid = useCallback((g: { cols: number; rows: number }) => setGrid(g), []);
   const gridRef = useRef<MosaicGridHandle>(null);
   const [busy, setBusy] = useState<'download' | 'svg' | 'pdf' | 'share' | null>(null);
@@ -167,7 +162,7 @@ export function Mosaic({ image, playlist, trackCovers, onReset }: MosaicProps) {
     // Export the mosaic exactly as configured, at full per-tile crispness.
     const blob = await gridRef.current?.toBlob();
     if (!blob) return;
-    saveBlob(blob, `${baseName}.${extFor(blob)}`);
+    saveBlob(blob, `${baseName}.jpg`);
   }, [baseName]);
 
   const handleExportSvg = useCallback(async () => {
@@ -188,7 +183,7 @@ export function Mosaic({ image, playlist, trackCovers, onReset }: MosaicProps) {
     // Share the full-crispness export — same bitmap as download.
     const blob = await gridRef.current?.toBlob();
     if (!blob) return;
-    const file = new File([blob], `${baseName}.${extFor(blob)}`, { type: blob.type });
+    const file = new File([blob], `${baseName}.jpg`, { type: blob.type });
     const shareData = {
       files: [file],
       title: 'My Mosaify mosaic',
@@ -237,7 +232,7 @@ export function Mosaic({ image, playlist, trackCovers, onReset }: MosaicProps) {
       id: 'image',
       icon: <IconPhoto size={ICON_SIZE.md} />,
       label: 'Image',
-      description: 'WebP or JPEG bitmap',
+      description: 'JPEG bitmap',
       onSelect: onDownload,
     },
     {
@@ -276,9 +271,35 @@ export function Mosaic({ image, playlist, trackCovers, onReset }: MosaicProps) {
         </p>
       </div>
 
-      {/* Mosaic + controls */}
-      <div className="flex items-start justify-center mb-6">
-        <div className="relative shrink-0" style={{ width: 660, maxWidth: '100%' }}>
+      {/* Controls + mosaic */}
+      <div className="flex flex-col items-center gap-6 mb-6">
+        <div className="flex max-w-full flex-col gap-3 rounded-xl border border-border bg-card px-5 py-4">
+          <div className="flex items-start justify-center gap-8">
+            <ControlToggle
+              label="Methodology"
+              options={ALGORITHM_TOGGLE_OPTIONS}
+              value={algorithm}
+              disabled={busy !== null}
+              onChange={setAlgorithm}
+              footnotes={ALGORITHM_FOOTNOTES}
+              onFootnote={setHoveredFootnote}
+            />
+            <ControlToggle
+              label="Tiles"
+              options={RESOLUTION_TOGGLE_OPTIONS}
+              value={resolution}
+              disabled={busy !== null}
+              onChange={setResolution}
+            />
+          </div>
+          {hoveredFootnote && (
+            <p className="w-0 min-w-full text-[11px] leading-snug text-muted-foreground">
+              <span className="font-medium text-foreground">{hoveredFootnote.term}</span> —{' '}
+              {hoveredFootnote.description}
+            </p>
+          )}
+        </div>
+        <div className="shrink-0" style={{ width: 660, maxWidth: '100%' }}>
           <MosaicGrid
             ref={gridRef}
             image={image}
@@ -287,23 +308,6 @@ export function Mosaic({ image, playlist, trackCovers, onReset }: MosaicProps) {
             algorithm={algorithm}
             onGrid={handleGrid}
           />
-          <div className="absolute left-full top-0 ml-6 flex shrink-0 flex-col gap-6 rounded-xl border border-border bg-card px-5 py-4">
-            <ControlToggle
-              label="Tiles"
-              options={RESOLUTION_TOGGLE_OPTIONS}
-              value={resolution}
-              disabled={busy !== null}
-              onChange={setResolution}
-            />
-            <ControlToggle
-              label="Quality"
-              options={ALGORITHM_TOGGLE_OPTIONS}
-              value={algorithm}
-              disabled={busy !== null}
-              onChange={setAlgorithm}
-              footnotes={ALGORITHM_FOOTNOTES}
-            />
-          </div>
         </div>
       </div>
 

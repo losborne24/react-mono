@@ -178,6 +178,161 @@ function matchDeltaE76(grid: RGB[], tiles: SourceImage[]): MatchedCell[] {
   });
 }
 
+/** ΔE76 squared distance with an adjustable weight on the luminance (L*) term. */
+function weightedLabDist2(a: Lab, b: Lab, wL: number): number {
+  const dl = a[0] - b[0];
+  const da = a[1] - b[1];
+  const db = a[2] - b[2];
+  return wL * dl * dl + da * da + db * db;
+}
+
+/**
+ * Sobel gradient magnitude per cell, over the grid's luminance (Lab L*). Cells sit on a
+ * `cols`-wide row-major grid; out-of-bounds samples replicate the edge cell. Magnitudes
+ * are normalised to 0–1 by the grid's peak gradient, so they scale a per-cell weight
+ * independent of the image's absolute contrast.
+ */
+function sobelEdges(lum: number[], cols: number): number[] {
+  const rows = Math.ceil(lum.length / cols);
+  const at = (x: number, y: number): number => {
+    const cx = x < 0 ? 0 : x >= cols ? cols - 1 : x;
+    const cy = y < 0 ? 0 : y >= rows ? rows - 1 : y;
+    return lum[cy * cols + cx];
+  };
+  const mag = new Array<number>(lum.length);
+  let max = 0;
+  for (let y = 0; y < rows; y++) {
+    for (let x = 0; x < cols; x++) {
+      const tl = at(x - 1, y - 1);
+      const tc = at(x, y - 1);
+      const tr = at(x + 1, y - 1);
+      const ml = at(x - 1, y);
+      const mr = at(x + 1, y);
+      const bl = at(x - 1, y + 1);
+      const bc = at(x, y + 1);
+      const br = at(x + 1, y + 1);
+      const gx = tr + 2 * mr + br - tl - 2 * ml - bl;
+      const gy = bl + 2 * bc + br - tl - 2 * tc - tr;
+      const m = Math.hypot(gx, gy);
+      mag[y * cols + x] = m;
+      if (m > max) max = m;
+    }
+  }
+  if (max > 0) {
+    for (let i = 0; i < mag.length; i++) mag[i] /= max;
+  }
+  return mag;
+}
+
+/** Extra weight on the ΔE76 luminance term at full edge strength (0 ⇒ plain ΔE76). */
+const EDGE_LUMA_BOOST = 3;
+
+/**
+ * Perceptual (ΔE76) match with Sobel edge weighting. A Sobel pass over the grid's
+ * luminance flags edge cells — outlines and high-contrast detail — and at those cells the
+ * luminance term of the ΔE76 distance is boosted, so the chosen tile tracks the edge's
+ * brightness tightly and the outline survives. Flat cells fall back to plain ΔE76, leaving
+ * overall colour accuracy unchanged.
+ */
+function matchDetail(grid: RGB[], tiles: SourceImage[], cols: number): MatchedCell[] {
+  const swatches = toSwatches(tiles);
+  if (!swatches.length) return [];
+  const cellLabs = grid.map(rgbToLab);
+  const edges = sobelEdges(
+    cellLabs.map((lab) => lab[0]),
+    Math.max(1, cols),
+  );
+  return cellLabs.map((cellLab, idx) => {
+    const wL = 1 + EDGE_LUMA_BOOST * edges[idx];
+    let best = swatches[0];
+    let bestDist = weightedLabDist2(cellLab, best.lab, wL);
+    for (let i = 1; i < swatches.length; i++) {
+      const d = weightedLabDist2(cellLab, swatches[i].lab, wL);
+      if (d < bestDist) {
+        best = swatches[i];
+        bestDist = d;
+      }
+    }
+    return { url: best.url, rgb: best.rgb };
+  });
+}
+
+/** Side length, in cells, of the coarse pooling block for the multi-scale pass. */
+const MULTISCALE_BLOCK = 4;
+/** Weight on the coarse-scale ΔE76 term relative to the per-cell term (0 ⇒ plain ΔE76). */
+const MULTISCALE_COARSE_WEIGHT = 0.5;
+
+/**
+ * Average-pool the grid's Lab colours into `block`×`block` cell blocks, then expand back so
+ * every cell carries the mean colour of its block — a single coarse level of an image
+ * pyramid. Cells lie on a `cols`-wide row-major grid; partial blocks at the right/bottom
+ * edges just average the cells they contain.
+ */
+function coarseLabs(cellLabs: Lab[], cols: number, block: number): Lab[] {
+  const rows = Math.ceil(cellLabs.length / cols);
+  const out = new Array<Lab>(cellLabs.length);
+  for (let by = 0; by < rows; by += block) {
+    for (let bx = 0; bx < cols; bx += block) {
+      const yEnd = Math.min(by + block, rows);
+      const xEnd = Math.min(bx + block, cols);
+      let l = 0;
+      let a = 0;
+      let b = 0;
+      let n = 0;
+      for (let y = by; y < yEnd; y++) {
+        for (let x = bx; x < xEnd; x++) {
+          const idx = y * cols + x;
+          if (idx >= cellLabs.length) continue;
+          const lab = cellLabs[idx];
+          l += lab[0];
+          a += lab[1];
+          b += lab[2];
+          n++;
+        }
+      }
+      if (!n) continue;
+      const mean: Lab = [l / n, a / n, b / n];
+      for (let y = by; y < yEnd; y++) {
+        for (let x = bx; x < xEnd; x++) {
+          const idx = y * cols + x;
+          if (idx < cellLabs.length) out[idx] = mean;
+        }
+      }
+    }
+  }
+  return out;
+}
+
+/**
+ * Multi-scale perceptual match. Alongside each cell's own ΔE76 distance it adds a weighted
+ * ΔE76 to the cell's coarse (block-averaged) colour, so a chosen tile must fit both the fine
+ * cell and the larger region it sits in. Neighbouring tiles then cohere across a region,
+ * keeping big shapes and overall composition legible where a purely per-cell match fragments
+ * them.
+ */
+function matchMultiScale(grid: RGB[], tiles: SourceImage[], cols: number): MatchedCell[] {
+  const swatches = toSwatches(tiles);
+  if (!swatches.length) return [];
+  const cellLabs = grid.map(rgbToLab);
+  const coarse = coarseLabs(cellLabs, Math.max(1, cols), MULTISCALE_BLOCK);
+  return cellLabs.map((cellLab, idx) => {
+    const coarseLab = coarse[idx];
+    let best = swatches[0];
+    let bestDist =
+      labDist2(cellLab, best.lab) + MULTISCALE_COARSE_WEIGHT * labDist2(coarseLab, best.lab);
+    for (let i = 1; i < swatches.length; i++) {
+      const d =
+        labDist2(cellLab, swatches[i].lab) +
+        MULTISCALE_COARSE_WEIGHT * labDist2(coarseLab, swatches[i].lab);
+      if (d < bestDist) {
+        best = swatches[i];
+        bestDist = d;
+      }
+    }
+    return { url: best.url, rgb: best.rgb };
+  });
+}
+
 /** Nearest tile by CIEDE2000 — the most perceptually accurate metric, but the slowest. */
 function matchDeltaE2000(grid: RGB[], tiles: SourceImage[]): MatchedCell[] {
   const swatches = toSwatches(tiles);
@@ -224,8 +379,12 @@ function matchVariety(grid: RGB[], tiles: SourceImage[]): MatchedCell[] {
   });
 }
 
-/** A cell→tile matching strategy. More can be added; the toggle switches between them. */
-type MatchAlgorithm = (grid: RGB[], tiles: SourceImage[]) => MatchedCell[];
+/**
+ * A cell→tile matching strategy. `cols` gives the grid's row width so 2D-aware strategies
+ * (e.g. {@link matchDetail}'s Sobel pass) can read a cell's neighbours; strategies that
+ * work per-cell simply ignore it. More can be added; the toggle switches between them.
+ */
+type MatchAlgorithm = (grid: RGB[], tiles: SourceImage[], cols: number) => MatchedCell[];
 
 interface MatchOption {
   id: string;
@@ -236,14 +395,14 @@ interface MatchOption {
   match: MatchAlgorithm;
 }
 
-/** Available matching modes, in toggle order. */
+/** Available matching methodologies, in toggle order. */
 const MATCH_OPTIONS: MatchOption[] = [
   {
     id: 'fast',
     label: 'Fast',
     term: 'RGB (Euclidean Distance)',
     description:
-      'Compares colours using their raw RGB values. Fastest, but least representative of human colour perception.',
+      'Matches tiles by comparing raw RGB colour values. Fastest methodology, but least representative of human colour perception.',
     match: matchNearestRgb,
   },
   {
@@ -251,23 +410,39 @@ const MATCH_OPTIONS: MatchOption[] = [
     label: 'Balanced',
     term: 'ΔE76 (CIELAB)',
     description:
-      'Compares colours in the CIELAB colour space using Euclidean distance. Provides a good balance between performance and perceptual accuracy.',
+      'Matches tiles using perceptual colour difference in the CIELAB colour space. Offers a good balance between processing speed and visual accuracy.',
     match: matchDeltaE76,
   },
   {
-    id: 'best',
-    label: 'Best',
+    id: 'detail',
+    label: 'Detail',
+    term: 'ΔE76 (CIELAB) with Sobel edge weighting',
+    description:
+      'Combines perceptual colour matching with Sobel edge detection to better preserve outlines, contrast and fine details while maintaining accurate colours.',
+    match: matchDetail,
+  },
+  {
+    id: 'accurate',
+    label: 'Accurate',
     term: 'ΔE2000 (CIEDE2000)',
     description:
-      'An improved perceptual colour difference formula that more closely matches human vision. More computationally expensive, but offers the most accurate colour matching.',
+      'Matches tiles using the CIEDE2000 perceptual colour difference formula. Produces the most faithful colour matching, but requires more processing.',
     match: matchDeltaE2000,
+  },
+  {
+    id: 'structure',
+    label: 'Structure',
+    term: 'ΔE76 (CIELAB) with multi-scale',
+    description:
+      'Uses ΔE76 (CIELAB) perceptual colour matching across multiple image scales to preserve larger shapes, composition and important visual structures.',
+    match: matchMultiScale,
   },
   {
     id: 'variety',
     label: 'Variety',
     term: 'ΔE76 (CIELAB) with reuse penalty',
     description:
-      'Perceptual CIELAB matching that penalises reusing a cover, so no single one dominates. Spreads the artwork across the mosaic.',
+      'Uses perceptual colour matching while reducing repeated tile usage. Creates a more evenly distributed mosaic without significantly affecting colour accuracy.',
     match: matchVariety,
   },
 ];
@@ -290,8 +465,17 @@ export const MATCH_ALGORITHMS: MatchAlgorithmOption[] = MATCH_OPTIONS.map(
 export const DEFAULT_MATCH_ALGORITHM =
   MATCH_OPTIONS.find((o) => o.id === 'balanced')?.id ?? MATCH_OPTIONS[0].id;
 
-/** Run a matching strategy by id, falling back to the first option for an unknown id. */
-export function runMatch(algorithm: string, grid: RGB[], tiles: SourceImage[]): MatchedCell[] {
+/**
+ * Run a matching strategy by id, falling back to the first option for an unknown id.
+ * `cols` is the sampled grid's row width, needed by 2D-aware strategies (see
+ * {@link MatchAlgorithm}).
+ */
+export function runMatch(
+  algorithm: string,
+  grid: RGB[],
+  tiles: SourceImage[],
+  cols: number,
+): MatchedCell[] {
   const algo = MATCH_OPTIONS.find((o) => o.id === algorithm) ?? MATCH_OPTIONS[0];
-  return algo.match(grid, tiles);
+  return algo.match(grid, tiles, cols);
 }

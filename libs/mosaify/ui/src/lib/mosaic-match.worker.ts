@@ -13,6 +13,8 @@ export interface MatchRequest {
   algorithm: string;
   grid: RGB[];
   tiles: SourceImage[];
+  /** Sampled grid's row width, so 2D-aware strategies can read a cell's neighbours. */
+  cols: number;
 }
 
 export interface MatchResponse {
@@ -21,7 +23,7 @@ export interface MatchResponse {
 }
 
 self.onmessage = (e: MessageEvent<MatchRequest>) => {
-  const { id, algorithm, grid, tiles } = e.data;
-  const cells = runMatch(algorithm, grid, tiles);
+  const { id, algorithm, grid, tiles, cols } = e.data;
+  const cells = runMatch(algorithm, grid, tiles, cols);
   (self as unknown as Worker).postMessage({ id, cells } satisfies MatchResponse);
 };

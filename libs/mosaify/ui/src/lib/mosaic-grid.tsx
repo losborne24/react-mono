@@ -91,9 +91,7 @@ const PDF_MAX_CELL_PT = 72;
 
 /**
  * Quality for the flat raster JPEG export. Kept below 0.9 so Chrome uses 4:2:0 chroma
- * subsampling (it switches to bulkier 4:4:4 at ≥0.9). JPEG — not WebP — on purpose:
- * at these sizes the WebP encoder is 3–4× slower (~11s vs ~2.4s at 8192px, measured)
- * for no reliable size win on high-frequency tile content.
+ * subsampling (it switches to bulkier 4:4:4 at ≥0.9).
  */
 const EXPORT_JPEG_QUALITY = 0.8;
 
@@ -994,6 +992,7 @@ export const MosaicGrid = forwardRef<MosaicGridHandle, MosaicGridProps>(function
         algorithm,
         grid: sampled.cells,
         tiles,
+        cols,
       } satisfies MatchRequest);
       return () => {
         active = false;
@@ -1002,7 +1001,7 @@ export const MosaicGrid = forwardRef<MosaicGridHandle, MosaicGridProps>(function
     }
 
     // No Worker available: match synchronously.
-    paint(runMatch(algorithm, sampled.cells, tiles));
+    paint(runMatch(algorithm, sampled.cells, tiles, cols));
     return () => {
       active = false;
     };
