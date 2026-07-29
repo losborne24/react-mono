@@ -8,6 +8,8 @@ import {
   Mosaic,
   useMosaifyWizard,
   WIZARD_STEP_INDICATORS,
+  type WizardHandlers,
+  type WizardView,
 } from '@react-mono/mosaify-feature';
 
 function Brand() {
@@ -49,22 +51,11 @@ function BackgroundTexture() {
   );
 }
 
-type WizardHandlers = Pick<
-  ReturnType<typeof useMosaifyWizard>,
-  | 'selectPlaylist'
-  | 'setPlaylistSearch'
-  | 'selectImage'
-  | 'connect'
-  | 'confirmPlaylist'
-  | 'confirmImage'
-  | 'reset'
->;
-
 function WizardContent({
   view,
   handlers,
 }: {
-  view: ReturnType<typeof useMosaifyWizard>['view'];
+  view: WizardView;
   handlers: WizardHandlers;
 }) {
   switch (view.step) {
@@ -116,30 +107,7 @@ function WizardContent({
 }
 
 export function App() {
-  const {
-    view,
-    stepNumber,
-    profile,
-    selectPlaylist,
-    setPlaylistSearch,
-    selectImage,
-    connect,
-    confirmPlaylist,
-    confirmImage,
-    back,
-    reset,
-    switchAccount,
-  } = useMosaifyWizard();
-
-  const handlers = {
-    selectPlaylist,
-    setPlaylistSearch,
-    selectImage,
-    connect,
-    confirmPlaylist,
-    confirmImage,
-    reset,
-  };
+  const { view, stepNumber, profile, handlers, back, switchAccount } = useMosaifyWizard();
 
   return (
     <div className="min-h-screen bg-background text-foreground font-sans flex flex-col relative overflow-hidden">

@@ -110,21 +110,26 @@ export type WizardView =
       trackCovers: SourceImage[];
     };
 
-export interface MosaifyWizard {
-  step: WizardStep;
-  view: WizardView;
-  stepNumber: number;
-  totalSteps: number;
-  profile: SpotifyProfile | null;
+/** Step-scoped actions consumed by `WizardContent` as a single unit. */
+export interface WizardHandlers {
   selectPlaylist: (playlist: Playlist | null) => void;
   setPlaylistSearch: (query: string) => void;
   selectImage: (image: SourceImage | null) => void;
   connect: () => void;
   confirmPlaylist: () => void;
   confirmImage: () => void;
+  reset: () => void;
+}
+
+export interface MosaifyWizard {
+  step: WizardStep;
+  view: WizardView;
+  stepNumber: number;
+  totalSteps: number;
+  profile: SpotifyProfile | null;
+  handlers: WizardHandlers;
   /** Go to the previous step, or `undefined` when back isn't offered. */
   back: (() => void) | undefined;
-  reset: () => void;
   /** Sign out and return to the connect step to authenticate as someone else. */
   switchAccount: () => void;
 }
@@ -256,7 +261,6 @@ export function useMosaifyWizard(): MosaifyWizard {
         };
       case 'mosaic':
         if (selectedImage && selectedPlaylist) {
-          console.log({ step, image: selectedImage, playlist: selectedPlaylist, trackCovers });
           return { step, image: selectedImage, playlist: selectedPlaylist, trackCovers };
         }
         // Invariant: `mosaic` (index 3) is only reachable via confirmImage /
@@ -276,14 +280,16 @@ export function useMosaifyWizard(): MosaifyWizard {
     stepNumber: stepper.stepNumber,
     totalSteps: stepper.count,
     profile,
-    selectPlaylist: setSelectedPlaylist,
-    setPlaylistSearch: setSearch,
-    selectImage: setSelectedImage,
-    connect: auth.connect,
-    confirmPlaylist,
-    confirmImage,
+    handlers: {
+      selectPlaylist: setSelectedPlaylist,
+      setPlaylistSearch: setSearch,
+      selectImage: setSelectedImage,
+      connect: auth.connect,
+      confirmPlaylist,
+      confirmImage,
+      reset,
+    },
     back: stepper.canBack ? back : undefined,
-    reset,
     switchAccount,
   };
 }
