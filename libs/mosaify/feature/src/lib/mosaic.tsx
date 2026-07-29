@@ -13,15 +13,7 @@ import {
   DEFAULT_MATCH_ALGORITHM,
   type MosaicGridHandle,
 } from '@react-mono/mosaify-ui';
-import {
-  Button,
-  ButtonGroup,
-  ICON_SIZE,
-  DownloadMenu,
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@react-mono/shared-ui';
+import { Button, ButtonGroup, ICON_SIZE, DownloadMenu } from '@react-mono/shared-ui';
 
 /** Selectable tile counts along the image's longer edge; shorter edge follows aspect. */
 const RESOLUTION_OPTIONS = [64, 256, 512] as const;
@@ -32,17 +24,23 @@ const RESOLUTION_TOGGLE_OPTIONS: { value: Resolution; label: string }[] = RESOLU
   (value) => ({ value, label: `${value}` }),
 );
 
-const ALGORITHM_TOGGLE_OPTIONS = MATCH_ALGORITHMS.map(({ id, label, description }) => ({
-  value: id,
-  label,
-  tooltip: description,
-}));
+const ALGORITHM_TOGGLE_OPTIONS = MATCH_ALGORITHMS.map(({ id, label }) => ({ value: id, label }));
+
+/** The metric footnote to show under the algorithm toggle, keyed by option id. */
+const ALGORITHM_FOOTNOTES: Record<string, { term: string; description: string }> =
+  Object.fromEntries(
+    MATCH_ALGORITHMS.map(({ id, term, description }) => [id, { term, description }]),
+  );
 
 interface ToggleOption<T extends string | number> {
   value: T;
   label: string;
-  /** Optional methodology blurb shown on hover/focus. */
-  tooltip?: string;
+}
+
+/** Short explanatory note shown beneath a toggle, with an emphasised lead-in term. */
+interface ToggleFootnote {
+  term: string;
+  description: string;
 }
 
 interface ControlToggleProps<T extends string | number> {
@@ -51,6 +49,8 @@ interface ControlToggleProps<T extends string | number> {
   value: T;
   disabled: boolean;
   onChange: (value: T) => void;
+  /** Optional per-option notes, keyed by option value; shown for the hovered button. */
+  footnotes?: Record<string, ToggleFootnote>;
 }
 
 interface ToggleButtonProps<T extends string | number> {
@@ -58,6 +58,7 @@ interface ToggleButtonProps<T extends string | number> {
   selected: boolean;
   disabled: boolean;
   onSelect: (value: T) => void;
+  onHover: (value: T | null) => void;
 }
 
 function ToggleButton<T extends string | number>({
@@ -65,27 +66,19 @@ function ToggleButton<T extends string | number>({
   selected,
   disabled,
   onSelect,
+  onHover,
 }: ToggleButtonProps<T>) {
-  const button = (
+  return (
     <Button
       size="sm"
       variant={selected ? 'secondary' : 'outline'}
       disabled={disabled}
       onClick={() => onSelect(option.value)}
+      onMouseEnter={() => onHover(option.value)}
+      onMouseLeave={() => onHover(null)}
     >
       {option.label}
     </Button>
-  );
-
-  if (!option.tooltip) return button;
-
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>{button}</TooltipTrigger>
-      <TooltipContent side="top" className="max-w-56 text-center leading-snug">
-        {option.tooltip}
-      </TooltipContent>
-    </Tooltip>
   );
 }
 
@@ -96,7 +89,10 @@ function ControlToggle<T extends string | number>({
   value,
   disabled,
   onChange,
+  footnotes,
 }: ControlToggleProps<T>) {
+  const [hovered, setHovered] = useState<T | null>(null);
+  const footnote = hovered !== null ? footnotes?.[String(hovered)] : undefined;
   return (
     <div className="flex flex-col gap-2">
       <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-medium">
@@ -110,9 +106,16 @@ function ControlToggle<T extends string | number>({
             selected={option.value === value}
             disabled={disabled}
             onSelect={onChange}
+            onHover={setHovered}
           />
         ))}
       </ButtonGroup>
+      {footnote && (
+        <p className="max-w-56 text-[11px] leading-snug text-muted-foreground">
+          <span className="font-medium text-foreground">{footnote.term}</span> —{' '}
+          {footnote.description}
+        </p>
+      )}
     </div>
   );
 }
@@ -254,12 +257,13 @@ export function Mosaic({ image, playlist, trackCovers, onReset }: MosaicProps) {
   ];
 
   const total = grid ? grid.cols * grid.rows : 0;
+  const methodology = ALGORITHM_FOOTNOTES[algorithm];
 
   const stats = [
     { label: 'Grid', value: grid ? `${grid.cols} × ${grid.rows}` : '—' },
     { label: 'Tiles', value: total ? total.toLocaleString() : '—' },
     { label: 'Unique artwork', value: `${trackCovers.length}` },
-    { label: 'Playlist', value: playlist.artist },
+    ...(methodology ? [{ label: 'Methodology', value: methodology.term }] : []),
   ];
 
   return (
@@ -292,11 +296,12 @@ export function Mosaic({ image, playlist, trackCovers, onReset }: MosaicProps) {
               onChange={setResolution}
             />
             <ControlToggle
-              label="Algorithm"
+              label="Quality"
               options={ALGORITHM_TOGGLE_OPTIONS}
               value={algorithm}
               disabled={busy !== null}
               onChange={setAlgorithm}
+              footnotes={ALGORITHM_FOOTNOTES}
             />
           </div>
         </div>

@@ -21,10 +21,11 @@ export default defineConfig(() => ({
     host: '127.0.0.1',
   },
   plugins: [react(), tailwindcss()],
-  // Uncomment this if you are using workers.
-  // worker: {
-  //  plugins: [],
-  // },
+  // The mosaic match runs in an ES module worker (mosaic-match.worker.ts) that imports a
+  // shared module, so it must be emitted as ESM for the production build.
+  worker: {
+    format: 'es',
+  },
   build: {
     outDir: './dist',
     emptyOutDir: true,
