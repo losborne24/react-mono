@@ -2,7 +2,13 @@ import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useSta
 import type { PointerEvent as ReactPointerEvent, ReactNode } from 'react';
 import { IconPlus, IconMinus, IconZoomReset, IconLoader2 } from '@tabler/icons-react';
 import type { SourceImage } from '@react-mono/models';
-import { DEFAULT_MATCH_ALGORITHM, runMatch, type MatchedCell, type RGB } from './mosaic-match';
+import {
+  DEFAULT_MATCH_ALGORITHM,
+  runMatch,
+  type MatchAlgorithmId,
+  type MatchedCell,
+  type RGB,
+} from './mosaic-match';
 import type { MatchRequest, MatchResponse } from './mosaic-match.worker';
 
 const MIN_SCALE = 1;
@@ -135,7 +141,7 @@ export interface MosaicGridProps {
   /** Tile count along the image's longer edge; the shorter edge follows its aspect. */
   resolution?: number;
   /** Selected matching-algorithm id (see MATCH_ALGORITHMS). Controlled by the parent. */
-  algorithm?: string;
+  algorithm?: MatchAlgorithmId;
   /** Reports the derived grid once the image aspect is known (for stats/labels). */
   onGrid?: (grid: { cols: number; rows: number }) => void;
 }
@@ -208,7 +214,7 @@ function sampleGrid(url: string, resolution: number): Promise<SampledGrid | null
  * toggle) is unchanged; the matching logic itself now lives there so it can run inside
  * `mosaic-match.worker.ts` off the main thread.
  */
-export type { MatchAlgorithmOption } from './mosaic-match';
+export type { MatchAlgorithmId, MatchAlgorithmOption } from './mosaic-match';
 export { MATCH_ALGORITHMS } from './mosaic-match';
 export { DEFAULT_MATCH_ALGORITHM };
 

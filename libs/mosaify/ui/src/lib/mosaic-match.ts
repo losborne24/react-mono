@@ -396,7 +396,7 @@ interface MatchOption {
 }
 
 /** Available matching methodologies, in toggle order. */
-const MATCH_OPTIONS: MatchOption[] = [
+const MATCH_OPTIONS = [
   {
     id: 'fast',
     label: 'Fast',
@@ -445,11 +445,14 @@ const MATCH_OPTIONS: MatchOption[] = [
       'Uses perceptual colour matching while reducing repeated tile usage. Creates a more evenly distributed mosaic without significantly affecting colour accuracy.',
     match: matchVariety,
   },
-];
+] as const satisfies readonly MatchOption[];
+
+/** Union of valid matching-algorithm ids, derived from {@link MATCH_OPTIONS}. */
+export type MatchAlgorithmId = (typeof MATCH_OPTIONS)[number]['id'];
 
 /** Public metadata for the matching algorithms, for a parent-rendered toggle + footnote. */
 export interface MatchAlgorithmOption {
-  id: string;
+  id: MatchAlgorithmId;
   label: string;
   /** Short name of the underlying colour-difference metric, for the footnote lead-in. */
   term: string;
@@ -462,7 +465,7 @@ export const MATCH_ALGORITHMS: MatchAlgorithmOption[] = MATCH_OPTIONS.map(
 );
 
 /** Default matching mode id — Balanced (Lab + ΔE76). */
-export const DEFAULT_MATCH_ALGORITHM =
+export const DEFAULT_MATCH_ALGORITHM: MatchAlgorithmId =
   MATCH_OPTIONS.find((o) => o.id === 'balanced')?.id ?? MATCH_OPTIONS[0].id;
 
 /**

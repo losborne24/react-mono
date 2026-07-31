@@ -11,6 +11,7 @@ import {
   MosaicGrid,
   MATCH_ALGORITHMS,
   DEFAULT_MATCH_ALGORITHM,
+  type MatchAlgorithmId,
   type MosaicGridHandle,
 } from '@react-mono/mosaify-ui';
 import {
@@ -82,11 +83,11 @@ function MosaicHeader({ imageLabel, playlistTitle }: { imageLabel: string; playl
 }
 
 interface MosaicControlsProps {
-  algorithm: string;
+  algorithm: MatchAlgorithmId;
   resolution: Resolution;
   disabled: boolean;
   footnote: ToggleFootnote | null;
-  onAlgorithmChange: (value: string) => void;
+  onAlgorithmChange: (value: MatchAlgorithmId) => void;
   onResolutionChange: (value: Resolution) => void;
   onFootnote: (footnote: ToggleFootnote | null) => void;
 }
@@ -168,7 +169,7 @@ function MosaicActions({ items, busy, hasGrid, onShare, onReset }: MosaicActions
 export function Mosaic({ image, playlist, trackCovers, onReset }: MosaicProps) {
   const [grid, setGrid] = useState<GridSize | null>(null);
   const [resolution, setResolution] = useState<Resolution>(DEFAULT_RESOLUTION);
-  const [algorithm, setAlgorithm] = useState<string>(DEFAULT_MATCH_ALGORITHM);
+  const [algorithm, setAlgorithm] = useState<MatchAlgorithmId>(DEFAULT_MATCH_ALGORITHM);
   const [hoveredFootnote, setHoveredFootnote] = useState<ToggleFootnote | null>(null);
   const handleGrid = useCallback((g: GridSize) => setGrid(g), []);
   const gridRef = useRef<MosaicGridHandle>(null);
@@ -245,7 +246,7 @@ export function Mosaic({ image, playlist, trackCovers, onReset }: MosaicProps) {
     { label: 'Grid', value: grid ? `${grid.cols} × ${grid.rows}` : '—' },
     { label: 'Tiles', value: total ? total.toLocaleString() : '—' },
     { label: 'Unique artwork', value: `${trackCovers.length}` },
-    ...(methodology ? [{ label: 'Methodology', value: methodology.term }] : []),
+    { label: 'Methodology', value: methodology.term },
   ];
 
   return (
