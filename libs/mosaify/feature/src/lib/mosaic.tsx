@@ -15,9 +15,12 @@ import {
 } from '@react-mono/mosaify-ui';
 import {
   Button,
+  Card,
   ControlToggle,
   ICON_SIZE,
   DownloadMenu,
+  StatsStrip,
+  type Stat,
   type ToggleFootnote,
 } from '@react-mono/shared-ui';
 import { saveBlob } from '@react-mono/mosaify-util';
@@ -55,11 +58,6 @@ interface GridSize {
 
 /** An in-flight export; also drives the `busy` state and disabled controls. */
 type ExportAction = 'download' | 'svg' | 'pdf' | 'share';
-
-interface Stat {
-  label: string;
-  value: string;
-}
 
 /** Filesystem-safe slug from the playlist title, for the downloaded file name. */
 function slugify(text: string): string {
@@ -104,7 +102,7 @@ function MosaicControls({
   onFootnote,
 }: MosaicControlsProps) {
   return (
-    <div className="flex max-w-full flex-col gap-3 rounded-xl border border-border bg-card px-5 py-4">
+    <Card className="max-w-full gap-3 px-5 py-4 shadow-none">
       <div className="flex flex-col items-start justify-center gap-4 sm:flex-row sm:gap-8">
         <ControlToggle
           label="Methodology"
@@ -128,29 +126,7 @@ function MosaicControls({
           <span className="font-medium text-foreground">{footnote.term}</span> — {footnote.description}
         </p>
       )}
-    </div>
-  );
-}
-
-function StatItem({ label, value }: Stat) {
-  return (
-    <div className="flex flex-col gap-0.5">
-      <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-medium">
-        {label}
-      </span>
-      <span className="text-sm font-semibold text-foreground">{value}</span>
-    </div>
-  );
-}
-
-/** Horizontal strip summarising the mosaic (grid size, tile count, artwork, methodology). */
-function StatsStrip({ stats }: { stats: Stat[] }) {
-  return (
-    <div className="flex items-center gap-6 rounded-xl px-5 py-3 mb-6 border border-border bg-card">
-      {stats.map((stat) => (
-        <StatItem key={stat.label} label={stat.label} value={stat.value} />
-      ))}
-    </div>
+    </Card>
   );
 }
 
@@ -298,7 +274,7 @@ export function Mosaic({ image, playlist, trackCovers, onReset }: MosaicProps) {
         </div>
       </div>
 
-      <StatsStrip stats={stats} />
+      <StatsStrip stats={stats} className="mb-6" />
 
       <MosaicActions
         items={downloadItems}
