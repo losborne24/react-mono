@@ -13,7 +13,7 @@ import {
   DEFAULT_MATCH_ALGORITHM,
   type MosaicGridHandle,
 } from '@react-mono/mosaify-ui';
-import { Button, ButtonGroup, ICON_SIZE, DownloadMenu } from '@react-mono/shared-ui';
+import { ButtonGroup, ToggleButton, ICON_SIZE, DownloadMenu } from '@react-mono/shared-ui';
 
 /** Selectable tile counts along the image's longer edge; shorter edge follows aspect. */
 const RESOLUTION_OPTIONS = [64, 128, 256, 512] as const;
@@ -55,7 +55,7 @@ interface ControlToggleProps<T extends string | number> {
   onFootnote?: (footnote: ToggleFootnote | null) => void;
 }
 
-interface ToggleButtonProps<T extends string | number> {
+interface OptionToggleProps<T extends string | number> {
   option: ToggleOption<T>;
   selected: boolean;
   disabled: boolean;
@@ -63,24 +63,24 @@ interface ToggleButtonProps<T extends string | number> {
   onHover: (value: T | null) => void;
 }
 
-function ToggleButton<T extends string | number>({
+/** Binds a toggle option's value to the shared ToggleButton's callbacks. */
+function OptionToggle<T extends string | number>({
   option,
   selected,
   disabled,
   onSelect,
   onHover,
-}: ToggleButtonProps<T>) {
+}: OptionToggleProps<T>) {
   return (
-    <Button
-      size="sm"
-      variant={selected ? 'secondary' : 'outline'}
+    <ToggleButton
+      selected={selected}
       disabled={disabled}
       onClick={() => onSelect(option.value)}
       onMouseEnter={() => onHover(option.value)}
       onMouseLeave={() => onHover(null)}
     >
       {option.label}
-    </Button>
+    </ToggleButton>
   );
 }
 
@@ -105,7 +105,7 @@ function ControlToggle<T extends string | number>({
       </span>
       <ButtonGroup orientation="horizontal">
         {options.map((option) => (
-          <ToggleButton
+          <OptionToggle
             key={String(option.value)}
             option={option}
             selected={option.value === value}

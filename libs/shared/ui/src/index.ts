@@ -2,6 +2,7 @@ export * from './lib/icon-size';
 export * from './lib/loading';
 export * from './lib/button';
 export * from './lib/button-group';
+export * from './lib/toggle-button';
 export * from './lib/dropdown-menu';
 export * from './lib/download-menu';
 export * from './lib/input';
