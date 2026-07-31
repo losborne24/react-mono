@@ -5,12 +5,12 @@ import type { Playlist, SourceImage } from '@react-mono/models';
 import {
   ARTWORK_PAGE_SIZE,
   SAMPLE_IMAGES,
-  extractPlaylistId,
   fetchPlaylist,
   fetchSearchPlaylists,
   fetchPlaylistArtworkPage,
   fetchUserPlaylists,
 } from '@react-mono/mosaify-data';
+import { extractPlaylistId } from '@react-mono/mosaify-util';
 import { useSpotifyAuth } from './use-spotify-auth';
 import type { AuthStatus, SpotifyProfile } from './use-spotify-auth';
 

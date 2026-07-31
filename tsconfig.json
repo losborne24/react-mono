@@ -29,6 +29,9 @@
     },
     {
       "path": "./libs/shared/ui"
+    },
+    {
+      "path": "./libs/mosaify/util"
     }
   ]
 }

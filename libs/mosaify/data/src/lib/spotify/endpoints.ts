@@ -1,6 +1,6 @@
 import type { Playlist, SourceImage } from '@react-mono/models';
 import { spotifyGet } from './client';
-import { averageColor } from './average-color';
+import { averageColor } from '@react-mono/mosaify-util';
 import type {
   SpotifyPaged,
   SpotifyPlaylistSummary,
