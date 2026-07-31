@@ -198,16 +198,13 @@ export function Mosaic({ image, playlist, trackCovers, onReset }: MosaicProps) {
   const baseName = `mosaify-${slugify(playlist.title)}`;
 
   /** Render the mosaic via the given grid method and download it under baseName.ext. */
-  const saveExport = useCallback(
-    async (render: () => Promise<Blob | null> | undefined, ext: string) => {
-      const blob = await render();
-      if (!blob) return;
-      saveBlob(blob, `${baseName}.${ext}`);
-    },
-    [baseName],
-  );
+  const saveExport = async (render: () => Promise<Blob | null> | undefined, ext: string) => {
+    const blob = await render();
+    if (!blob) return;
+    saveBlob(blob, `${baseName}.${ext}`);
+  };
 
-  const handleShare = useCallback(async () => {
+  const handleShare = async () => {
     // Share the full-crispness export — same bitmap as download.
     const blob = await gridRef.current?.toBlob();
     if (!blob) return;
@@ -227,17 +224,14 @@ export function Mosaic({ image, playlist, trackCovers, onReset }: MosaicProps) {
       return;
     }
     saveBlob(blob, file.name);
-  }, [baseName, image.label, playlist.title]);
+  };
 
   /** Run an export action while reflecting its progress in `busy` (ignored if already busy). */
-  const runAction = useCallback(
-    (action: ExportAction, fn: () => Promise<void>) => {
-      if (busy) return;
-      setBusy(action);
-      fn().finally(() => setBusy(null));
-    },
-    [busy],
-  );
+  const runAction = (action: ExportAction, fn: () => Promise<void>) => {
+    if (busy) return;
+    setBusy(action);
+    fn().finally(() => setBusy(null));
+  };
 
   const downloadItems = [
     {

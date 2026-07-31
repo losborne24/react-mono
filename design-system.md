@@ -285,6 +285,30 @@ over:
 })}
 ```
 
+## Memoization
+
+Use `useCallback` / `useMemo` only where they earn it. A memoized value is worth it only when its stable identity is actually consumed by:
+
+* a `React.memo` child (so it can skip re-rendering), or
+* a dependency array of another `useEffect` / `useMemo` / `useCallback`.
+
+Do **not** wrap a handler "for consistency" or by default. It has no effect — and adds noise — when the callback is only ever passed to a non-memoized child, or re-wrapped in a fresh inline closure (`onClick={() => handler()}`) on every render anyway.
+
+Wrap when it matters:
+
+```tsx
+// onGrid is a dep of an expensive effect inside <MosaicGrid> — a new
+// identity each render would re-fire that effect. Memoization is load-bearing.
+const handleGrid = useCallback((g: GridSize) => setGrid(g), []);
+```
+
+Leave it plain when it doesn't:
+
+```tsx
+// Only ever called from inline closures; child isn't memoized. useCallback is dead weight.
+const saveExport = async (render, ext) => { ... };
+```
+
 ---
 
 # State Management
