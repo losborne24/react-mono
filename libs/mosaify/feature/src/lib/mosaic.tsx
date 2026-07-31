@@ -171,6 +171,9 @@ export function Mosaic({ image, playlist, trackCovers, onReset }: MosaicProps) {
   const [resolution, setResolution] = useState<Resolution>(DEFAULT_RESOLUTION);
   const [algorithm, setAlgorithm] = useState<MatchAlgorithmId>(DEFAULT_MATCH_ALGORITHM);
   const [hoveredFootnote, setHoveredFootnote] = useState<ToggleFootnote | null>(null);
+  // Stable identity is load-bearing: onGrid is a dep of MosaicGrid's sampling
+  // effect, which calls it → setGrid. A fresh closure each render would re-fire
+  // that effect on every unrelated re-render (footnote hover, busy), looping.
   const handleGrid = useCallback((g: GridSize) => setGrid(g), []);
   const gridRef = useRef<MosaicGridHandle>(null);
   const [busy, setBusy] = useState<ExportAction | null>(null);
