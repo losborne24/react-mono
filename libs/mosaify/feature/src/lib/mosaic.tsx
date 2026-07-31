@@ -14,6 +14,7 @@ import {
   type MosaicGridHandle,
 } from '@react-mono/mosaify-ui';
 import {
+  Button,
   ControlToggle,
   ICON_SIZE,
   DownloadMenu,
@@ -167,21 +168,23 @@ function MosaicActions({ items, busy, hasGrid, onShare, onReset }: MosaicActions
   return (
     <div className="flex items-center gap-3">
       <DownloadMenu busy={busy !== null} disabled={disabled} items={items} />
-      <button
+      <Button
+        variant="outline"
         onClick={onShare}
         disabled={disabled}
-        className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm border border-border bg-card text-foreground hover:bg-secondary transition-all duration-200 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+        className="h-auto rounded-xl border-border bg-card px-5 py-2.5 font-semibold text-foreground hover:bg-secondary hover:text-foreground disabled:opacity-60"
       >
         <IconShare2 size={ICON_SIZE.md} />
         {busy === 'share' ? 'Sharing…' : 'Share'}
-      </button>
-      <button
+      </Button>
+      <Button
+        variant="ghost"
         onClick={onReset}
-        className="ml-auto flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm text-muted-foreground hover:text-foreground border border-border hover:border-border/60 transition-all duration-200 cursor-pointer"
+        className="ml-auto h-auto rounded-xl border border-border px-4 py-2.5 text-muted-foreground hover:border-border/60 hover:bg-transparent hover:text-foreground"
       >
         <IconRefresh size={ICON_SIZE.sm} />
         Start over
-      </button>
+      </Button>
     </div>
   );
 }
