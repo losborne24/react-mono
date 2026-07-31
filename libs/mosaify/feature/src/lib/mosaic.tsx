@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useRef, useState, type ComponentProps } from 'react';
 import {
   IconFileTypeSvg,
   IconFileTypePdf,
@@ -13,7 +13,13 @@ import {
   DEFAULT_MATCH_ALGORITHM,
   type MosaicGridHandle,
 } from '@react-mono/mosaify-ui';
-import { ButtonGroup, ToggleButton, ICON_SIZE, DownloadMenu } from '@react-mono/shared-ui';
+import {
+  ControlToggle,
+  ICON_SIZE,
+  DownloadMenu,
+  type ToggleFootnote,
+} from '@react-mono/shared-ui';
+import { saveBlob } from '@react-mono/mosaify-util';
 
 /** Selectable tile counts along the image's longer edge; shorter edge follows aspect. */
 const RESOLUTION_OPTIONS = [64, 128, 256, 512] as const;
@@ -32,72 +38,26 @@ const ALGORITHM_FOOTNOTES: Record<string, { term: string; description: string }>
     MATCH_ALGORITHMS.map(({ id, term, description }) => [id, { term, description }]),
   );
 
-interface ToggleOption<T extends string | number> {
-  value: T;
-  label: string;
-}
-
-/** Short explanatory note shown beneath a toggle, with an emphasised lead-in term. */
-interface ToggleFootnote {
-  term: string;
-  description: string;
-}
-
-interface ControlToggleProps<T extends string | number> {
-  label: string;
-  options: readonly ToggleOption<T>[];
-  value: T;
-  disabled: boolean;
-  onChange: (value: T) => void;
-  /** Optional per-option notes, keyed by option value; surfaced via onFootnote on hover. */
-  footnotes?: Record<string, ToggleFootnote>;
-  /** Reports the footnote for the hovered button (or null on leave), for the parent to render. */
-  onFootnote?: (footnote: ToggleFootnote | null) => void;
-}
-
-/** Labelled segmented control (horizontal buttons), shown in the controls row above the mosaic. */
-function ControlToggle<T extends string | number>({
-  label,
-  options,
-  value,
-  disabled,
-  onChange,
-  footnotes,
-  onFootnote,
-}: ControlToggleProps<T>) {
-  const handleHover = (hovered: T | null) => {
-    const footnote = hovered !== null ? footnotes?.[String(hovered)] ?? null : null;
-    onFootnote?.(footnote);
-  };
-  return (
-    <div className="flex flex-col gap-2">
-      <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-medium">
-        {label}
-      </span>
-      <ButtonGroup orientation="horizontal">
-        {options.map((option) => (
-          <ToggleButton
-            key={String(option.value)}
-            selected={option.value === value}
-            disabled={disabled}
-            onClick={() => onChange(option.value)}
-            onMouseEnter={() => handleHover(option.value)}
-            onMouseLeave={() => handleHover(null)}
-          >
-            {option.label}
-          </ToggleButton>
-        ))}
-      </ButtonGroup>
-    </div>
-  );
-}
-
 export interface MosaicProps {
   image: SourceImage;
   playlist: Playlist;
   /** Album artwork used as mosaic tiles. */
   trackCovers: SourceImage[];
   onReset: () => void;
+}
+
+/** Tile dimensions of the rendered mosaic, reported by MosaicGrid. */
+interface GridSize {
+  cols: number;
+  rows: number;
+}
+
+/** An in-flight export; also drives the `busy` state and disabled controls. */
+type ExportAction = 'download' | 'svg' | 'pdf' | 'share';
+
+interface Stat {
+  label: string;
+  value: string;
 }
 
 /** Filesystem-safe slug from the playlist title, for the downloaded file name. */
@@ -110,24 +70,130 @@ function slugify(text: string): string {
   );
 }
 
-/** Trigger a browser download for a blob under the given file name. */
-function saveBlob(blob: Blob, name: string): void {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = name;
-  a.click();
-  URL.revokeObjectURL(url);
+function MosaicHeader({ imageLabel, playlistTitle }: { imageLabel: string; playlistTitle: string }) {
+  return (
+    <div className="mb-6">
+      <h2 className="font-display text-2xl font-bold text-foreground mb-1">Your mosaic</h2>
+      <p className="text-muted-foreground text-sm">
+        {imageLabel} · recreated from <span className="text-foreground/80">{playlistTitle}</span>{' '}
+        artwork
+      </p>
+    </div>
+  );
+}
+
+interface MosaicControlsProps {
+  algorithm: string;
+  resolution: Resolution;
+  disabled: boolean;
+  footnote: ToggleFootnote | null;
+  onAlgorithmChange: (value: string) => void;
+  onResolutionChange: (value: Resolution) => void;
+  onFootnote: (footnote: ToggleFootnote | null) => void;
+}
+
+/** The card of segmented controls (methodology, tile count) above the mosaic. */
+function MosaicControls({
+  algorithm,
+  resolution,
+  disabled,
+  footnote,
+  onAlgorithmChange,
+  onResolutionChange,
+  onFootnote,
+}: MosaicControlsProps) {
+  return (
+    <div className="flex max-w-full flex-col gap-3 rounded-xl border border-border bg-card px-5 py-4">
+      <div className="flex flex-col items-start justify-center gap-4 sm:flex-row sm:gap-8">
+        <ControlToggle
+          label="Methodology"
+          options={ALGORITHM_TOGGLE_OPTIONS}
+          value={algorithm}
+          disabled={disabled}
+          onChange={onAlgorithmChange}
+          footnotes={ALGORITHM_FOOTNOTES}
+          onFootnote={onFootnote}
+        />
+        <ControlToggle
+          label="Tiles"
+          options={RESOLUTION_TOGGLE_OPTIONS}
+          value={resolution}
+          disabled={disabled}
+          onChange={onResolutionChange}
+        />
+      </div>
+      {footnote && (
+        <p className="w-0 min-w-full text-[11px] leading-snug text-muted-foreground">
+          <span className="font-medium text-foreground">{footnote.term}</span> — {footnote.description}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function StatItem({ label, value }: Stat) {
+  return (
+    <div className="flex flex-col gap-0.5">
+      <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-medium">
+        {label}
+      </span>
+      <span className="text-sm font-semibold text-foreground">{value}</span>
+    </div>
+  );
+}
+
+/** Horizontal strip summarising the mosaic (grid size, tile count, artwork, methodology). */
+function StatsStrip({ stats }: { stats: Stat[] }) {
+  return (
+    <div className="flex items-center gap-6 rounded-xl px-5 py-3 mb-6 border border-border bg-card">
+      {stats.map((stat) => (
+        <StatItem key={stat.label} label={stat.label} value={stat.value} />
+      ))}
+    </div>
+  );
+}
+
+interface MosaicActionsProps {
+  items: ComponentProps<typeof DownloadMenu>['items'];
+  busy: ExportAction | null;
+  hasGrid: boolean;
+  onShare: () => void;
+  onReset: () => void;
+}
+
+/** Download menu, share button, and reset control shown below the stats strip. */
+function MosaicActions({ items, busy, hasGrid, onShare, onReset }: MosaicActionsProps) {
+  const disabled = !hasGrid || busy !== null;
+  return (
+    <div className="flex items-center gap-3">
+      <DownloadMenu busy={busy !== null} disabled={disabled} items={items} />
+      <button
+        onClick={onShare}
+        disabled={disabled}
+        className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm border border-border bg-card text-foreground hover:bg-secondary transition-all duration-200 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+      >
+        <IconShare2 size={ICON_SIZE.md} />
+        {busy === 'share' ? 'Sharing…' : 'Share'}
+      </button>
+      <button
+        onClick={onReset}
+        className="ml-auto flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm text-muted-foreground hover:text-foreground border border-border hover:border-border/60 transition-all duration-200 cursor-pointer"
+      >
+        <IconRefresh size={ICON_SIZE.sm} />
+        Start over
+      </button>
+    </div>
+  );
 }
 
 export function Mosaic({ image, playlist, trackCovers, onReset }: MosaicProps) {
-  const [grid, setGrid] = useState<{ cols: number; rows: number } | null>(null);
+  const [grid, setGrid] = useState<GridSize | null>(null);
   const [resolution, setResolution] = useState<Resolution>(DEFAULT_RESOLUTION);
   const [algorithm, setAlgorithm] = useState<string>(DEFAULT_MATCH_ALGORITHM);
   const [hoveredFootnote, setHoveredFootnote] = useState<ToggleFootnote | null>(null);
-  const handleGrid = useCallback((g: { cols: number; rows: number }) => setGrid(g), []);
+  const handleGrid = useCallback((g: GridSize) => setGrid(g), []);
   const gridRef = useRef<MosaicGridHandle>(null);
-  const [busy, setBusy] = useState<'download' | 'svg' | 'pdf' | 'share' | null>(null);
+  const [busy, setBusy] = useState<ExportAction | null>(null);
 
   const baseName = `mosaify-${slugify(playlist.title)}`;
 
@@ -165,7 +231,7 @@ export function Mosaic({ image, playlist, trackCovers, onReset }: MosaicProps) {
 
   /** Run an export action while reflecting its progress in `busy` (ignored if already busy). */
   const runAction = useCallback(
-    (action: NonNullable<typeof busy>, fn: () => Promise<void>) => {
+    (action: ExportAction, fn: () => Promise<void>) => {
       if (busy) return;
       setBusy(action);
       fn().finally(() => setBusy(null));
@@ -202,7 +268,7 @@ export function Mosaic({ image, playlist, trackCovers, onReset }: MosaicProps) {
   const total = grid ? grid.cols * grid.rows : 0;
   const methodology = ALGORITHM_FOOTNOTES[algorithm];
 
-  const stats = [
+  const stats: Stat[] = [
     { label: 'Grid', value: grid ? `${grid.cols} × ${grid.rows}` : '—' },
     { label: 'Tiles', value: total ? total.toLocaleString() : '—' },
     { label: 'Unique artwork', value: `${trackCovers.length}` },
@@ -211,42 +277,18 @@ export function Mosaic({ image, playlist, trackCovers, onReset }: MosaicProps) {
 
   return (
     <div className="flex flex-col flex-1 px-6 pb-12 max-w-3xl mx-auto w-full">
-      <div className="mb-6">
-        <h2 className="font-display text-2xl font-bold text-foreground mb-1">Your mosaic</h2>
-        <p className="text-muted-foreground text-sm">
-          {image.label} · recreated from{' '}
-          <span className="text-foreground/80">{playlist.title}</span> artwork
-        </p>
-      </div>
+      <MosaicHeader imageLabel={image.label} playlistTitle={playlist.title} />
 
-      {/* Controls + mosaic */}
       <div className="flex flex-col items-center gap-6 mb-6">
-        <div className="flex max-w-full flex-col gap-3 rounded-xl border border-border bg-card px-5 py-4">
-          <div className="flex flex-col items-start justify-center gap-4 sm:flex-row sm:gap-8">
-            <ControlToggle
-              label="Methodology"
-              options={ALGORITHM_TOGGLE_OPTIONS}
-              value={algorithm}
-              disabled={busy !== null}
-              onChange={setAlgorithm}
-              footnotes={ALGORITHM_FOOTNOTES}
-              onFootnote={setHoveredFootnote}
-            />
-            <ControlToggle
-              label="Tiles"
-              options={RESOLUTION_TOGGLE_OPTIONS}
-              value={resolution}
-              disabled={busy !== null}
-              onChange={setResolution}
-            />
-          </div>
-          {hoveredFootnote && (
-            <p className="w-0 min-w-full text-[11px] leading-snug text-muted-foreground">
-              <span className="font-medium text-foreground">{hoveredFootnote.term}</span> —{' '}
-              {hoveredFootnote.description}
-            </p>
-          )}
-        </div>
+        <MosaicControls
+          algorithm={algorithm}
+          resolution={resolution}
+          disabled={busy !== null}
+          footnote={hoveredFootnote}
+          onAlgorithmChange={setAlgorithm}
+          onResolutionChange={setResolution}
+          onFootnote={setHoveredFootnote}
+        />
         <div className="shrink-0" style={{ width: 660, maxWidth: '100%' }}>
           <MosaicGrid
             ref={gridRef}
@@ -259,41 +301,15 @@ export function Mosaic({ image, playlist, trackCovers, onReset }: MosaicProps) {
         </div>
       </div>
 
-      {/* Stats strip */}
-      <div className="flex items-center gap-6 rounded-xl px-5 py-3 mb-6 border border-border bg-card">
-        {stats.map((stat) => (
-          <div key={stat.label} className="flex flex-col gap-0.5">
-            <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-medium">
-              {stat.label}
-            </span>
-            <span className="text-sm font-semibold text-foreground">{stat.value}</span>
-          </div>
-        ))}
-      </div>
+      <StatsStrip stats={stats} />
 
-      {/* Actions */}
-      <div className="flex items-center gap-3">
-        <DownloadMenu
-          busy={busy !== null}
-          disabled={!grid || busy !== null}
-          items={downloadItems}
-        />
-        <button
-          onClick={onShare}
-          disabled={!grid || busy !== null}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm border border-border bg-card text-foreground hover:bg-secondary transition-all duration-200 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
-        >
-          <IconShare2 size={ICON_SIZE.md} />
-          {busy === 'share' ? 'Sharing…' : 'Share'}
-        </button>
-        <button
-          onClick={onReset}
-          className="ml-auto flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm text-muted-foreground hover:text-foreground border border-border hover:border-border/60 transition-all duration-200 cursor-pointer"
-        >
-          <IconRefresh size={ICON_SIZE.sm} />
-          Start over
-        </button>
-      </div>
+      <MosaicActions
+        items={downloadItems}
+        busy={busy}
+        hasGrid={grid !== null}
+        onShare={onShare}
+        onReset={onReset}
+      />
     </div>
   );
 }
