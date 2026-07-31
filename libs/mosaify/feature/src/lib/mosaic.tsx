@@ -55,35 +55,6 @@ interface ControlToggleProps<T extends string | number> {
   onFootnote?: (footnote: ToggleFootnote | null) => void;
 }
 
-interface OptionToggleProps<T extends string | number> {
-  option: ToggleOption<T>;
-  selected: boolean;
-  disabled: boolean;
-  onSelect: (value: T) => void;
-  onHover: (value: T | null) => void;
-}
-
-/** Binds a toggle option's value to the shared ToggleButton's callbacks. */
-function OptionToggle<T extends string | number>({
-  option,
-  selected,
-  disabled,
-  onSelect,
-  onHover,
-}: OptionToggleProps<T>) {
-  return (
-    <ToggleButton
-      selected={selected}
-      disabled={disabled}
-      onClick={() => onSelect(option.value)}
-      onMouseEnter={() => onHover(option.value)}
-      onMouseLeave={() => onHover(null)}
-    >
-      {option.label}
-    </ToggleButton>
-  );
-}
-
 /** Labelled segmented control (horizontal buttons), shown in the controls row above the mosaic. */
 function ControlToggle<T extends string | number>({
   label,
@@ -105,14 +76,16 @@ function ControlToggle<T extends string | number>({
       </span>
       <ButtonGroup orientation="horizontal">
         {options.map((option) => (
-          <OptionToggle
+          <ToggleButton
             key={String(option.value)}
-            option={option}
             selected={option.value === value}
             disabled={disabled}
-            onSelect={onChange}
-            onHover={handleHover}
-          />
+            onClick={() => onChange(option.value)}
+            onMouseEnter={() => handleHover(option.value)}
+            onMouseLeave={() => handleHover(null)}
+          >
+            {option.label}
+          </ToggleButton>
         ))}
       </ButtonGroup>
     </div>
@@ -158,26 +131,15 @@ export function Mosaic({ image, playlist, trackCovers, onReset }: MosaicProps) {
 
   const baseName = `mosaify-${slugify(playlist.title)}`;
 
-  const handleDownload = useCallback(async () => {
-    // Export the mosaic exactly as configured, at full per-tile crispness.
-    const blob = await gridRef.current?.toBlob();
-    if (!blob) return;
-    saveBlob(blob, `${baseName}.jpg`);
-  }, [baseName]);
-
-  const handleExportSvg = useCallback(async () => {
-    // Dedup export: each unique cover embedded once, full 512px per tile at any density.
-    const blob = await gridRef.current?.toSvg();
-    if (!blob) return;
-    saveBlob(blob, `${baseName}.svg`);
-  }, [baseName]);
-
-  const handleExportPdf = useCallback(async () => {
-    // Print-ready dedup export: each cover embedded once at 512px, referenced per cell.
-    const blob = await gridRef.current?.toPdf();
-    if (!blob) return;
-    saveBlob(blob, `${baseName}.pdf`);
-  }, [baseName]);
+  /** Render the mosaic via the given grid method and download it under baseName.ext. */
+  const saveExport = useCallback(
+    async (render: () => Promise<Blob | null> | undefined, ext: string) => {
+      const blob = await render();
+      if (!blob) return;
+      saveBlob(blob, `${baseName}.${ext}`);
+    },
+    [baseName],
+  );
 
   const handleShare = useCallback(async () => {
     // Share the full-crispness export — same bitmap as download.
@@ -198,11 +160,12 @@ export function Mosaic({ image, playlist, trackCovers, onReset }: MosaicProps) {
       }
       return;
     }
-    await handleDownload();
-  }, [baseName, image.label, playlist.title, handleDownload]);
+    saveBlob(blob, file.name);
+  }, [baseName, image.label, playlist.title]);
 
+  /** Run an export action while reflecting its progress in `busy` (ignored if already busy). */
   const runAction = useCallback(
-    (action: 'download' | 'svg' | 'pdf' | 'share', fn: () => Promise<void>) => {
+    (action: NonNullable<typeof busy>, fn: () => Promise<void>) => {
       if (busy) return;
       setBusy(action);
       fn().finally(() => setBusy(null));
@@ -210,46 +173,31 @@ export function Mosaic({ image, playlist, trackCovers, onReset }: MosaicProps) {
     [busy],
   );
 
-  const onDownload = useCallback(
-    () => runAction('download', handleDownload),
-    [runAction, handleDownload],
-  );
-
-  const onExportSvg = useCallback(
-    () => runAction('svg', handleExportSvg),
-    [runAction, handleExportSvg],
-  );
-
-  const onExportPdf = useCallback(
-    () => runAction('pdf', handleExportPdf),
-    [runAction, handleExportPdf],
-  );
-
-  const onShare = useCallback(() => runAction('share', handleShare), [runAction, handleShare]);
-
   const downloadItems = [
     {
       id: 'image',
       icon: <IconPhoto size={ICON_SIZE.md} />,
       label: 'Image',
       description: 'JPEG bitmap',
-      onSelect: onDownload,
+      onSelect: () => runAction('download', () => saveExport(() => gridRef.current?.toBlob(), 'jpg')),
     },
     {
       id: 'svg',
       icon: <IconFileTypeSvg size={ICON_SIZE.md} />,
       label: 'SVG',
       description: 'Vector — full 512px per tile',
-      onSelect: onExportSvg,
+      onSelect: () => runAction('svg', () => saveExport(() => gridRef.current?.toSvg(), 'svg')),
     },
     {
       id: 'pdf',
       icon: <IconFileTypePdf size={ICON_SIZE.md} />,
       label: 'PDF',
       description: 'Print-ready — 300 DPI tiles',
-      onSelect: onExportPdf,
+      onSelect: () => runAction('pdf', () => saveExport(() => gridRef.current?.toPdf(), 'pdf')),
     },
   ];
+
+  const onShare = () => runAction('share', handleShare);
 
   const total = grid ? grid.cols * grid.rows : 0;
   const methodology = ALGORITHM_FOOTNOTES[algorithm];
