@@ -1,7 +1,7 @@
-import { IconChevronRight, IconSearch, IconX } from '@tabler/icons-react';
+import { IconChevronRight } from '@tabler/icons-react';
 import type { Playlist } from '@react-mono/models';
 import { PlaylistCard } from '@react-mono/mosaify-ui';
-import { Button, ICON_SIZE, IconButton, Loading } from '@react-mono/shared-ui';
+import { Button, ICON_SIZE, Loading, SearchInput } from '@react-mono/shared-ui';
 
 export interface SelectPlaylistProps {
   playlists: Playlist[];
@@ -16,39 +16,6 @@ export interface SelectPlaylistProps {
   loading?: boolean;
 }
 
-interface PlaylistSearchProps {
-  search: string;
-  searching: boolean;
-  onSearchChange: (query: string) => void;
-}
-
-function PlaylistSearch({ search, searching, onSearchChange }: PlaylistSearchProps) {
-  return (
-    <div className="relative mb-6">
-      <IconSearch
-        size={ICON_SIZE.md}
-        className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
-      />
-      <input
-        type="text"
-        value={search}
-        onChange={(e) => onSearchChange(e.target.value)}
-        placeholder="Search Spotify playlists, or paste a playlist link"
-        className="w-full rounded-xl bg-muted/50 border border-border pl-9 pr-9 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-      />
-      {searching && (
-        <IconButton
-          size="sm"
-          onClick={() => onSearchChange('')}
-          aria-label="Clear search"
-          className="absolute right-1.5 top-1/2 -translate-y-1/2"
-        >
-          <IconX size={ICON_SIZE.sm} />
-        </IconButton>
-      )}
-    </div>
-  );
-}
 
 interface PlaylistGridProps {
   playlists: Playlist[];
@@ -152,7 +119,14 @@ export function SelectPlaylist({
         </p>
       </div>
 
-      <PlaylistSearch search={search} searching={searching} onSearchChange={onSearchChange} />
+      <div className="mb-6">
+        <SearchInput
+          value={search}
+          onValueChange={onSearchChange}
+          placeholder="Search Spotify playlists, or paste a playlist link"
+          className="rounded-xl bg-muted/50"
+        />
+      </div>
 
       <PlaylistGrid
         playlists={playlists}

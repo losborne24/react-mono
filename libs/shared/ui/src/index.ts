@@ -10,6 +10,7 @@ export * from './lib/control-toggle';
 export * from './lib/dropdown-menu';
 export * from './lib/download-menu';
 export * from './lib/input';
+export * from './lib/search-input';
 export * from './lib/use-image-upload';
 export * from './lib/upload-zone';
 export * from './lib/tooltip';
