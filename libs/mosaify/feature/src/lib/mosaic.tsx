@@ -102,6 +102,8 @@ function MosaicControls({
   onResolutionChange,
   onFootnote,
 }: MosaicControlsProps) {
+  // Fall back to the selected methodology's note when nothing is hovered.
+  const activeFootnote = footnote ?? ALGORITHM_FOOTNOTES[algorithm];
   return (
     <Card className="max-w-full gap-3 px-5 py-4 shadow-none">
       <div className="flex flex-col items-start justify-center gap-4 sm:flex-row sm:gap-8">
@@ -122,9 +124,9 @@ function MosaicControls({
           onChange={onResolutionChange}
         />
       </div>
-      {footnote && (
+      {activeFootnote && (
         <p className="w-0 min-w-full text-[11px] leading-snug text-muted-foreground">
-          <span className="font-medium text-foreground">{footnote.term}</span> — {footnote.description}
+          <span className="font-medium text-foreground">{activeFootnote.term}</span> — {activeFootnote.description}
         </p>
       )}
     </Card>
