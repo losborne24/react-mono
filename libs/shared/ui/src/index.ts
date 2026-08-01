@@ -1,6 +1,7 @@
 export * from './lib/icon-size';
 export * from './lib/loading';
 export * from './lib/button';
+export * from './lib/icon-button';
 export * from './lib/card';
 export * from './lib/stats-strip';
 export * from './lib/button-group';

@@ -1,7 +1,7 @@
 import { IconChevronRight, IconSearch, IconX } from '@tabler/icons-react';
 import type { Playlist } from '@react-mono/models';
 import { PlaylistCard } from '@react-mono/mosaify-ui';
-import { Button, ICON_SIZE, Loading } from '@react-mono/shared-ui';
+import { Button, ICON_SIZE, IconButton, Loading } from '@react-mono/shared-ui';
 
 export interface SelectPlaylistProps {
   playlists: Playlist[];
@@ -37,14 +37,14 @@ function PlaylistSearch({ search, searching, onSearchChange }: PlaylistSearchPro
         className="w-full rounded-xl bg-muted/50 border border-border pl-9 pr-9 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
       />
       {searching && (
-        <button
-          type="button"
+        <IconButton
+          size="sm"
           onClick={() => onSearchChange('')}
           aria-label="Clear search"
-          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+          className="absolute right-1.5 top-1/2 -translate-y-1/2"
         >
-          <IconX size={ICON_SIZE.md} />
-        </button>
+          <IconX size={ICON_SIZE.sm} />
+        </IconButton>
       )}
     </div>
   );

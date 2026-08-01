@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { IconUpload, IconX } from '@tabler/icons-react';
 
-import { Button } from './button';
+import { IconButton } from './icon-button';
 import { ICON_SIZE } from './icon-size';
 import { Input } from './input';
 import { cn } from './utils';
@@ -38,10 +38,9 @@ export function FilePreview({ name, url, sizeBytes, onClear, className }: FilePr
       <img src={url} alt={name} className="w-8 h-8 rounded object-cover" />
       <span className="text-sm text-foreground font-medium truncate max-w-[200px]">{name}</span>
       <span className="text-xs text-muted-foreground">({(sizeBytes / 1024).toFixed(0)} KB)</span>
-      <Button
-        variant="ghost"
-        size="icon"
-        className="ml-1 size-6 text-muted-foreground hover:text-foreground"
+      <IconButton
+        size="sm"
+        className="ml-1"
         onClick={(e) => {
           e.stopPropagation();
           onClear();
@@ -49,7 +48,7 @@ export function FilePreview({ name, url, sizeBytes, onClear, className }: FilePr
         aria-label="Remove file"
       >
         <IconX size={ICON_SIZE.sm} />
-      </Button>
+      </IconButton>
     </div>
   );
 }
