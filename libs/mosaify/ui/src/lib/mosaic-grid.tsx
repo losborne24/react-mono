@@ -1,5 +1,5 @@
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
-import type { PointerEvent as ReactPointerEvent, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { IconPlus, IconMinus, IconZoomReset, IconLoader2 } from '@tabler/icons-react';
 import type { SourceImage } from '@react-mono/models';
 import {
@@ -17,30 +17,10 @@ import {
   type MosaicData,
   type SampledGrid,
   type TileCache,
-  type Transform,
 } from './mosaic-canvas';
 import { renderJpeg, renderPdf, renderSvg } from './mosaic-export';
+import { MIN_SCALE, usePanZoom } from './use-pan-zoom';
 import { ICON_SIZE } from '@react-mono/shared-ui';
-
-const MIN_SCALE = 1;
-const MAX_SCALE = 150;
-const ZOOM_SENSITIVITY = 0.01;
-/** Multiplier per +/− button press. */
-const ZOOM_STEP = 1.8;
-
-const IDENTITY: Transform = { scale: 1, x: 0, y: 0 };
-
-function clamp(v: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, v));
-}
-
-/** Keep the pan within bounds so the scaled content can't be dragged off-frame. */
-function clampTransform(t: Transform, width: number, height: number): Transform {
-  const scale = clamp(t.scale, MIN_SCALE, MAX_SCALE);
-  const maxX = (width * (scale - 1)) / 2;
-  const maxY = (height * (scale - 1)) / 2;
-  return { scale, x: clamp(t.x, -maxX, maxX), y: clamp(t.y, -maxY, maxY) };
-}
 
 export interface MosaicGridProps {
   image: SourceImage;
@@ -114,19 +94,12 @@ export const MosaicGrid = forwardRef<MosaicGridHandle, MosaicGridProps>(function
   const [matching, setMatching] = useState(false);
   // Sampled target grid for the current image, reused when only the algorithm changes.
   const sampledRef = useRef<SampledGrid | null>(null);
-  const frameRef = useRef<HTMLDivElement>(null);
-  const transformLayerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  // Overlay canvas, redrawn crisp on zoom-settle (see applyTransform's idle timer).
+  // Overlay canvas, redrawn crisp on zoom-settle (see drawDetail).
   const detailRef = useRef<HTMLCanvasElement>(null);
   // Decoded tiles + mosaic data kept for detail redraws without re-decoding.
   const tileCacheRef = useRef<TileCache>(new Map());
   const dataRef = useRef<MosaicData | null>(null);
-  // Live transform lives in a ref, not state: the mosaic can be ~40k <img> nodes,
-  // so re-rendering per frame is what makes pan/zoom lag. We write the transform
-  // straight onto the (GPU-composited) content layer instead — no React reconcile.
-  const transformRef = useRef<Transform>(IDENTITY);
-  const rafRef = useRef<number | null>(null);
   // Web Worker running the O(cells × tiles) match off the main thread so selecting a
   // heavy metric (notably "Best"/ΔE2000) can't freeze the UI. Lazily created; stays null
   // where Worker isn't available (jsdom/SSR), where we fall back to a synchronous match.
@@ -134,16 +107,9 @@ export const MosaicGrid = forwardRef<MosaicGridHandle, MosaicGridProps>(function
   // Monotonic id per match request; a response whose id isn't the latest is dropped, so
   // rapid algorithm toggles always settle on the last-selected one.
   const matchReqIdRef = useRef(0);
-  const dragRef = useRef<{
-    pointerId: number;
-    startX: number;
-    startY: number;
-    origin: Transform;
-  } | null>(null);
-  // Active pointers on the frame, keyed by pointerId, for pinch detection.
-  const pointersRef = useRef<Map<number, { x: number; y: number }>>(new Map());
-  // Baseline for the current pinch gesture (null when fewer than 2 pointers down).
-  const pinchRef = useRef<{ dist: number; scale: number } | null>(null);
+
+  const { frameRef, transformLayerRef, getTransform, frameHandlers, zoomIn, zoomOut, resetZoom } =
+    usePanZoom({ onTransform: () => drawDetail() });
 
   // Redraw the crisp overlay during motion. Only update it per frame when the
   // visible-cell count is low enough for 60fps; otherwise hide it and show the
@@ -156,7 +122,7 @@ export const MosaicGrid = forwardRef<MosaicGridHandle, MosaicGridProps>(function
     const rect = frame.getBoundingClientRect();
     // Visible cells ≈ total / scale² (each axis shrinks by `scale`). Above the cap
     // the per-frame drawImage cost risks dropping frames — fall back to the base.
-    const t = transformRef.current;
+    const t = getTransform();
     const visibleCells = (data.cols * data.rows) / (t.scale * t.scale);
     if (t.scale <= MIN_SCALE || visibleCells > DETAIL_MAX_CELLS) {
       detail.style.opacity = '0';
@@ -164,151 +130,7 @@ export const MosaicGrid = forwardRef<MosaicGridHandle, MosaicGridProps>(function
     }
     paintDetail(detail, data, tileCacheRef.current, t, rect.width, rect.height);
     detail.style.opacity = '1';
-  }, []);
-
-  // Push the current transform to the DOM on the next frame (coalesces bursts of
-  // wheel/move events into one write per frame) and reflect zoom state on the cursor.
-  const applyTransform = useCallback(() => {
-    if (rafRef.current !== null) return;
-    rafRef.current = requestAnimationFrame(() => {
-      rafRef.current = null;
-      const t = transformRef.current;
-      if (transformLayerRef.current) {
-        const transformLayer = transformLayerRef.current;
-        transformLayer.style.transform = `translate3d(${t.x}px, ${t.y}px, 0) scale(${t.scale})`;
-        transformLayer.style.willChange = 'transform';
-      }
-      // Redraw the crisp overlay in the same frame if "cheap" enough
-      drawDetail();
-      if (frameRef.current) {
-        const zoomed = t.scale > MIN_SCALE;
-        frameRef.current.style.cursor = zoomed
-          ? dragRef.current
-            ? 'grabbing'
-            : 'grab'
-          : 'default';
-      }
-    });
-  }, [drawDetail]);
-
-  // Zoom to an absolute scale while keeping the focal point (in client coords,
-  // e.g. cursor or pinch midpoint) fixed on screen. Centre-relative maths mirrors
-  // the `transformOrigin: center` layer.
-  const zoomTo = useCallback(
-    (nextScaleRaw: number, clientX: number, clientY: number) => {
-      const frame = frameRef.current;
-      if (!frame) return;
-      const rect = frame.getBoundingClientRect();
-      const t = transformRef.current;
-      const nextScale = clamp(nextScaleRaw, MIN_SCALE, MAX_SCALE);
-      const ratio = nextScale / t.scale;
-      const px = clientX - rect.left - rect.width / 2;
-      const py = clientY - rect.top - rect.height / 2;
-      const next = { scale: nextScale, x: px - (px - t.x) * ratio, y: py - (py - t.y) * ratio };
-      transformRef.current = clampTransform(next, rect.width, rect.height);
-      applyTransform();
-    },
-    [applyTransform],
-  );
-
-  // Step zoom from a +/− button, anchored on the frame centre.
-  const zoomByStep = useCallback(
-    (factor: number) => {
-      const frame = frameRef.current;
-      if (!frame) return;
-      const rect = frame.getBoundingClientRect();
-      zoomTo(
-        transformRef.current.scale * factor,
-        rect.left + rect.width / 2,
-        rect.top + rect.height / 2,
-      );
-    },
-    [zoomTo],
-  );
-
-  // React's synthetic onWheel is passive, so preventDefault() there is a no-op
-  // (page still scrolls). Bind a native non-passive wheel listener instead.
-  useEffect(() => {
-    const frame = frameRef.current;
-    if (!frame) return;
-    const onWheel = (e: WheelEvent) => {
-      e.preventDefault();
-      zoomTo(
-        transformRef.current.scale * Math.exp(-e.deltaY * ZOOM_SENSITIVITY),
-        e.clientX,
-        e.clientY,
-      );
-    };
-    frame.addEventListener('wheel', onWheel, { passive: false });
-    return () => frame.removeEventListener('wheel', onWheel);
-  }, [zoomTo]);
-
-  const handlePointerDown = useCallback((e: ReactPointerEvent<HTMLDivElement>) => {
-    const pointers = pointersRef.current;
-    e.currentTarget.setPointerCapture(e.pointerId);
-    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-
-    if (pointers.size >= 2) {
-      // Second finger down — start a pinch, end any single-finger drag.
-      dragRef.current = null;
-      const [a, b] = [...pointers.values()];
-      pinchRef.current = {
-        dist: Math.hypot(a.x - b.x, a.y - b.y),
-        scale: transformRef.current.scale,
-      };
-    } else if (transformRef.current.scale > MIN_SCALE) {
-      dragRef.current = {
-        pointerId: e.pointerId,
-        startX: e.clientX,
-        startY: e.clientY,
-        origin: transformRef.current,
-      };
-    }
-  }, []);
-
-  const handlePointerMove = useCallback(
-    (e: ReactPointerEvent<HTMLDivElement>) => {
-      const pointers = pointersRef.current;
-      if (pointers.has(e.pointerId)) pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-
-      // Pinch takes precedence over drag when two pointers are down.
-      const pinch = pinchRef.current;
-      if (pinch && pointers.size >= 2) {
-        const [a, b] = [...pointers.values()];
-        const dist = Math.hypot(a.x - b.x, a.y - b.y);
-        zoomTo((pinch.scale * dist) / pinch.dist, (a.x + b.x) / 2, (a.y + b.y) / 2);
-        return;
-      }
-
-      const drag = dragRef.current;
-      const frame = frameRef.current;
-      if (!drag || !frame || drag.pointerId !== e.pointerId) return;
-      const rect = frame.getBoundingClientRect();
-      const next = {
-        scale: drag.origin.scale,
-        x: drag.origin.x + (e.clientX - drag.startX),
-        y: drag.origin.y + (e.clientY - drag.startY),
-      };
-      transformRef.current = clampTransform(next, rect.width, rect.height);
-      applyTransform();
-    },
-    [applyTransform, zoomTo],
-  );
-
-  const endDrag = useCallback(
-    (e: ReactPointerEvent<HTMLDivElement>) => {
-      pointersRef.current.delete(e.pointerId);
-      if (pointersRef.current.size < 2) pinchRef.current = null;
-      if (dragRef.current?.pointerId === e.pointerId) dragRef.current = null;
-      applyTransform(); // refresh cursor grabbing → grab
-    },
-    [applyTransform],
-  );
-
-  const resetZoom = useCallback(() => {
-    transformRef.current = IDENTITY;
-    applyTransform();
-  }, [applyTransform]);
+  }, [frameRef, getTransform]);
 
   // Sample the target image whenever it (or the resolution) changes. Cheap enough
   // to redo, but kept in a ref so an algorithm toggle re-matches without re-sampling.
@@ -405,15 +227,9 @@ export const MosaicGrid = forwardRef<MosaicGridHandle, MosaicGridProps>(function
     };
   }, [algorithm, tiles, dimensions, drawDetail, getMatchWorker]);
 
-  // Cancel any pending frame on unmount. Reset the ref too: without this a
-  // StrictMode double-mount leaves rafRef stuck non-null, so every later
-  // applyTransform() bails at the guard and the DOM is never updated.
+  // Tear down the match worker on unmount (pan/zoom's own rAF cleanup lives in usePanZoom).
   useEffect(
     () => () => {
-      if (rafRef.current !== null) {
-        cancelAnimationFrame(rafRef.current);
-        rafRef.current = null;
-      }
       matchWorkerRef.current?.terminate();
       matchWorkerRef.current = null;
     },
@@ -458,11 +274,7 @@ export const MosaicGrid = forwardRef<MosaicGridHandle, MosaicGridProps>(function
           aspectRatio: `${cols}/${rows}`,
           cursor: 'default',
         }}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={endDrag}
-        onPointerCancel={endDrag}
-        onDoubleClick={resetZoom}
+        {...frameHandlers}
       >
         <div
           ref={transformLayerRef}
@@ -512,10 +324,10 @@ export const MosaicGrid = forwardRef<MosaicGridHandle, MosaicGridProps>(function
 
         {/* Zoom controls */}
         <div className="absolute bottom-3 right-3 flex flex-col gap-1 rounded-xl border border-white/10 bg-black/50 p-1 backdrop-blur-sm">
-          <ZoomButton label="Zoom in" onClick={() => zoomByStep(ZOOM_STEP)}>
+          <ZoomButton label="Zoom in" onClick={zoomIn}>
             <IconPlus size={ICON_SIZE.md} />
           </ZoomButton>
-          <ZoomButton label="Zoom out" onClick={() => zoomByStep(1 / ZOOM_STEP)}>
+          <ZoomButton label="Zoom out" onClick={zoomOut}>
             <IconMinus size={ICON_SIZE.md} />
           </ZoomButton>
           <ZoomButton label="Reset zoom" onClick={resetZoom}>
