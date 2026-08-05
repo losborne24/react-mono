@@ -4,6 +4,7 @@ import { IconPlus, IconMinus, IconZoomReset, IconLoader2 } from '@tabler/icons-r
 import type { SourceImage } from '@react-mono/models';
 import { DEFAULT_MATCH_ALGORITHM, type MatchAlgorithmId } from './mosaic-match';
 import { DETAIL_MAX_CELLS, paintDetail } from './mosaic-canvas';
+import type { MosaicData, TileCache } from './mosaic-canvas';
 import { renderJpeg, renderPdf, renderSvg } from './mosaic-export';
 import { MIN_SCALE, usePanZoom } from './use-pan-zoom';
 import { useMosaicMatch } from './use-mosaic-match';
@@ -69,6 +70,29 @@ function ZoomButton({ label, onClick, children }: ZoomButtonProps) {
   );
 }
 
+interface ZoomControlsProps {
+  onZoomIn: () => void;
+  onZoomOut: () => void;
+  onReset: () => void;
+}
+
+/** Bottom-right zoom overlay: in / out / reset. */
+function ZoomControls({ onZoomIn, onZoomOut, onReset }: ZoomControlsProps) {
+  return (
+    <div className="absolute bottom-3 right-3 flex flex-col gap-1 rounded-xl border border-white/10 bg-black/50 p-1 backdrop-blur-sm">
+      <ZoomButton label="Zoom in" onClick={onZoomIn}>
+        <IconPlus size={ICON_SIZE.md} />
+      </ZoomButton>
+      <ZoomButton label="Zoom out" onClick={onZoomOut}>
+        <IconMinus size={ICON_SIZE.md} />
+      </ZoomButton>
+      <ZoomButton label="Reset zoom" onClick={onReset}>
+        <IconZoomReset size={ICON_SIZE.md} />
+      </ZoomButton>
+    </div>
+  );
+}
+
 // Photomosaic: target image sampled per cell, each cell filled with the tile
 // whose average colour is nearest to the sampled colour. The grid dimensions are
 // derived from the image's aspect ratio (see `sampleGrid`), not fixed.
@@ -122,23 +146,20 @@ export const MosaicGrid = forwardRef<MosaicGridHandle, MosaicGridProps>(function
   // on-screen canvas, so saved tiles are crisp instead of the ~20px they appear on screen.
   useImperativeHandle(
     ref,
-    () => ({
-      toBlob: async () => {
-        const data = dataRef.current;
-        if (!data || !hasMosaic) return null;
-        return renderJpeg(data, tileCacheRef.current);
-      },
-      toSvg: async () => {
-        const data = dataRef.current;
-        if (!data || !hasMosaic) return null;
-        return renderSvg(data, tileCacheRef.current);
-      },
-      toPdf: async () => {
-        const data = dataRef.current;
-        if (!data || !hasMosaic) return null;
-        return renderPdf(data, tileCacheRef.current);
-      },
-    }),
+    () => {
+      // Each export renders from the painted data, or resolves null before it exists.
+      const render =
+        (fn: (data: MosaicData, cache: TileCache) => Promise<Blob | null>) => async () => {
+          const data = dataRef.current;
+          if (!data || !hasMosaic) return null;
+          return fn(data, tileCacheRef.current);
+        };
+      return {
+        toBlob: render(renderJpeg),
+        toSvg: render(renderSvg),
+        toPdf: render(renderPdf),
+      };
+    },
     [hasMosaic, dataRef, tileCacheRef],
   );
 
@@ -199,18 +220,7 @@ export const MosaicGrid = forwardRef<MosaicGridHandle, MosaicGridProps>(function
           </div>
         )}
 
-        {/* Zoom controls */}
-        <div className="absolute bottom-3 right-3 flex flex-col gap-1 rounded-xl border border-white/10 bg-black/50 p-1 backdrop-blur-sm">
-          <ZoomButton label="Zoom in" onClick={zoomIn}>
-            <IconPlus size={ICON_SIZE.md} />
-          </ZoomButton>
-          <ZoomButton label="Zoom out" onClick={zoomOut}>
-            <IconMinus size={ICON_SIZE.md} />
-          </ZoomButton>
-          <ZoomButton label="Reset zoom" onClick={resetZoom}>
-            <IconZoomReset size={ICON_SIZE.md} />
-          </ZoomButton>
-        </div>
+        <ZoomControls onZoomIn={zoomIn} onZoomOut={zoomOut} onReset={resetZoom} />
       </div>
     </div>
   );
