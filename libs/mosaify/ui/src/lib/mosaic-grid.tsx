@@ -2,7 +2,7 @@ import { forwardRef, useCallback, useImperativeHandle, useRef } from 'react';
 import type { ReactNode, RefObject } from 'react';
 import { IconPlus, IconMinus, IconZoomReset, IconLoader2 } from '@tabler/icons-react';
 import type { SourceImage } from '@react-mono/models';
-import { DEFAULT_MATCH_ALGORITHM, type MatchAlgorithmId } from './mosaic-match';
+import type { MatchAlgorithmId } from './mosaic-match';
 import { DETAIL_MAX_CELLS, paintDetail } from './mosaic-canvas';
 import type { MosaicData, TileCache } from './mosaic-canvas';
 import { renderJpeg, renderPdf, renderSvg } from './mosaic-export';
@@ -37,15 +37,6 @@ export interface MosaicGridHandle {
    */
   toPdf: () => Promise<Blob | null>;
 }
-
-/**
- * Re-exported from `mosaic-match.ts` so the public API (consumed by the feature lib's
- * toggle) is unchanged; the matching logic itself now lives there so it can run inside
- * `mosaic-match.worker.ts` off the main thread.
- */
-export type { MatchAlgorithmId, MatchAlgorithmOption } from './mosaic-match';
-export { MATCH_ALGORITHMS } from './mosaic-match';
-export { DEFAULT_MATCH_ALGORITHM };
 
 interface ZoomButtonProps {
   label: string;
@@ -127,7 +118,7 @@ function MosaicLayer({ transformLayerRef, canvasRef, hasMosaic, image }: MosaicL
  * Crisp overlay: the base canvas is CSS-scaled by the transform and blurs when zoomed in, so
  * this sibling (not transformed) re-rasterizes just the visible cells at device res each frame,
  * mapping the slice straight into frame pixels. Hidden until few enough cells are visible to
- * redraw per frame (scale > 1 AND cols*rows/scale² ≤ DETAIL_MAX_CELLS); see drawDetail.
+ * redraw per frame (scale > 1 AND cols*rows/scale² ≤ DETAIL_MAX_CELLS); see {@link drawDetail}.
  */
 function DetailOverlay({ detailRef }: { detailRef: RefObject<HTMLCanvasElement | null> }) {
   return (
@@ -204,31 +195,25 @@ export const MosaicGrid = forwardRef<MosaicGridHandle, MosaicGridProps>(function
     detail.style.opacity = '1';
   }, [frameRef, getTransform, dataRef, tileCacheRef]);
 
-  const cols = dimensions?.cols ?? resolution;
-  const rows = dimensions?.rows ?? resolution;
   const hasMosaic = dimensions !== null;
 
   // Expose the painted mosaic for download/share. Renders a fresh high-resolution
   // export (see renderJpeg/renderSvg/renderPdf) rather than reading the GPU-capped
   // on-screen canvas, so saved tiles are crisp instead of the ~20px they appear on screen.
-  useImperativeHandle(
-    ref,
-    () => {
-      // Each export renders from the painted data, or resolves null before it exists.
-      const render =
-        (fn: (data: MosaicData, cache: TileCache) => Promise<Blob | null>) => async () => {
-          const data = dataRef.current;
-          if (!data || !hasMosaic) return null;
-          return fn(data, tileCacheRef.current);
-        };
-      return {
-        toBlob: render(renderJpeg),
-        toSvg: render(renderSvg),
-        toPdf: render(renderPdf),
+  useImperativeHandle(ref, () => {
+    // Each export renders from the painted data, or resolves null before it exists.
+    const render =
+      (fn: (data: MosaicData, cache: TileCache) => Promise<Blob | null>) => async () => {
+        const data = dataRef.current;
+        if (!data || !hasMosaic) return null;
+        return fn(data, tileCacheRef.current);
       };
-    },
-    [hasMosaic, dataRef, tileCacheRef],
-  );
+    return {
+      toBlob: render(renderJpeg),
+      toSvg: render(renderSvg),
+      toPdf: render(renderPdf),
+    };
+  }, [hasMosaic, dataRef, tileCacheRef]);
 
   return (
     <div className="w-full" style={{ maxWidth: 660 }}>
@@ -236,7 +221,7 @@ export const MosaicGrid = forwardRef<MosaicGridHandle, MosaicGridProps>(function
         ref={frameRef}
         className="relative w-full overflow-hidden rounded-2xl shadow-2xl touch-none select-none"
         style={{
-          aspectRatio: `${cols}/${rows}`,
+          aspectRatio: dimensions ? `${dimensions.cols}/${dimensions.rows}` : '1/1',
           cursor: 'default',
         }}
         {...frameHandlers}

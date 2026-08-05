@@ -2,4 +2,5 @@ export * from './lib/spotify-logo';
 export * from './lib/selectable-thumb';
 export * from './lib/playlist-card';
 export * from './lib/mosaic-grid';
+export * from './lib/mosaic-match';
 export * from './lib/wizard-layout';
