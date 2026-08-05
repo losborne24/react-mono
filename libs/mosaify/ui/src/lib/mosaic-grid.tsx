@@ -2,7 +2,12 @@ import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useSta
 import type { PointerEvent as ReactPointerEvent, ReactNode } from 'react';
 import { IconPlus, IconMinus, IconZoomReset, IconLoader2 } from '@tabler/icons-react';
 import type { SourceImage } from '@react-mono/models';
-import { DEFAULT_MATCH_ALGORITHM, runMatch, type MatchAlgorithmId, type MatchedCell } from './mosaic-match';
+import {
+  DEFAULT_MATCH_ALGORITHM,
+  runMatch,
+  type MatchAlgorithmId,
+  type MatchedCell,
+} from './mosaic-match';
 import type { MatchRequest, MatchResponse } from './mosaic-match.worker';
 import {
   DETAIL_MAX_CELLS,
@@ -15,6 +20,7 @@ import {
   type Transform,
 } from './mosaic-canvas';
 import { renderJpeg, renderPdf, renderSvg } from './mosaic-export';
+import { ICON_SIZE } from '../../../../shared/ui/src/lib/icon-size';
 
 const MIN_SCALE = 1;
 const MAX_SCALE = 150;
@@ -478,8 +484,11 @@ export const MosaicGrid = forwardRef<MosaicGridHandle, MosaicGridProps>(function
             />
           )}
         </div>
-        {/* Crisp overlay: visible cells re-rasterized at device res on zoom-settle.
-          Not transformed — maps the visible slice straight into frame pixels. */}
+        {/* Crisp overlay: the base canvas is CSS-scaled by the transform and blurs
+          when zoomed in, so this sibling (not transformed) re-rasterizes just the
+          visible cells at device res each frame, mapping the slice straight into
+          frame pixels. Hidden until few enough cells are visible to redraw per
+          frame (scale > 1 AND cols*rows/scale² ≤ DETAIL_MAX_CELLS); see drawDetail. */}
         <canvas
           ref={detailRef}
           className="absolute inset-0 w-full h-full pointer-events-none"
@@ -496,20 +505,20 @@ export const MosaicGrid = forwardRef<MosaicGridHandle, MosaicGridProps>(function
         {/* Processing spinner — shown while the worker computes the tile match. */}
         {matching && (
           <div className="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-black/50 text-white/80 backdrop-blur-sm pointer-events-none">
-            <IconLoader2 size={16} className="animate-spin" />
+            <IconLoader2 size={ICON_SIZE.md} className="animate-spin" />
           </div>
         )}
 
         {/* Zoom controls */}
         <div className="absolute bottom-3 right-3 flex flex-col gap-1 rounded-xl border border-white/10 bg-black/50 p-1 backdrop-blur-sm">
           <ZoomButton label="Zoom in" onClick={() => zoomByStep(ZOOM_STEP)}>
-            <IconPlus size={16} />
+            <IconPlus size={ICON_SIZE.md} />
           </ZoomButton>
           <ZoomButton label="Zoom out" onClick={() => zoomByStep(1 / ZOOM_STEP)}>
-            <IconMinus size={16} />
+            <IconMinus size={ICON_SIZE.md} />
           </ZoomButton>
           <ZoomButton label="Reset zoom" onClick={resetZoom}>
-            <IconZoomReset size={16} />
+            <IconZoomReset size={ICON_SIZE.md} />
           </ZoomButton>
         </div>
       </div>
