@@ -1,5 +1,5 @@
 import { forwardRef, useCallback, useImperativeHandle, useRef } from 'react';
-import type { ReactNode } from 'react';
+import type { ReactNode, RefObject } from 'react';
 import { IconPlus, IconMinus, IconZoomReset, IconLoader2 } from '@tabler/icons-react';
 import type { SourceImage } from '@react-mono/models';
 import { DEFAULT_MATCH_ALGORITHM, type MatchAlgorithmId } from './mosaic-match';
@@ -93,6 +93,73 @@ function ZoomControls({ onZoomIn, onZoomOut, onReset }: ZoomControlsProps) {
   );
 }
 
+interface MosaicLayerProps {
+  transformLayerRef: RefObject<HTMLDivElement | null>;
+  canvasRef: RefObject<HTMLCanvasElement | null>;
+  hasMosaic: boolean;
+  image: SourceImage;
+}
+
+/** Transformed layer holding the painted mosaic canvas (or the source image placeholder). */
+function MosaicLayer({ transformLayerRef, canvasRef, hasMosaic, image }: MosaicLayerProps) {
+  return (
+    <div ref={transformLayerRef} className="absolute inset-0" style={{ transformOrigin: 'center' }}>
+      {/* One canvas replaces ~40k <img> nodes; painted imperatively in the effect. */}
+      <canvas
+        ref={canvasRef}
+        className="absolute inset-0 w-full h-full"
+        style={{ imageRendering: 'auto', display: hasMosaic ? 'block' : 'none' }}
+      />
+      {!hasMosaic && (
+        // Colours still resolving (or unreadable) — show the target as a placeholder.
+        <img
+          src={image.url}
+          alt={image.label}
+          className="absolute inset-0 w-full h-full object-cover"
+          draggable={false}
+        />
+      )}
+    </div>
+  );
+}
+
+/**
+ * Crisp overlay: the base canvas is CSS-scaled by the transform and blurs when zoomed in, so
+ * this sibling (not transformed) re-rasterizes just the visible cells at device res each frame,
+ * mapping the slice straight into frame pixels. Hidden until few enough cells are visible to
+ * redraw per frame (scale > 1 AND cols*rows/scale² ≤ DETAIL_MAX_CELLS); see drawDetail.
+ */
+function DetailOverlay({ detailRef }: { detailRef: RefObject<HTMLCanvasElement | null> }) {
+  return (
+    <canvas
+      ref={detailRef}
+      className="absolute inset-0 w-full h-full pointer-events-none"
+      style={{ opacity: 0, transition: 'opacity 0ms ease-out' }}
+    />
+  );
+}
+
+/** Static radial darkening at the frame edges. */
+function Vignette() {
+  return (
+    <div
+      className="absolute inset-0 pointer-events-none"
+      style={{
+        background: 'radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.4) 100%)',
+      }}
+    />
+  );
+}
+
+/** Spinner shown top-right while the worker computes the tile match. */
+function ProcessingSpinner() {
+  return (
+    <div className="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-black/50 text-white/80 backdrop-blur-sm pointer-events-none">
+      <IconLoader2 size={ICON_SIZE.md} className="animate-spin" />
+    </div>
+  );
+}
+
 // Photomosaic: target image sampled per cell, each cell filled with the tile
 // whose average colour is nearest to the sampled colour. The grid dimensions are
 // derived from the image's aspect ratio (see `sampleGrid`), not fixed.
@@ -174,52 +241,15 @@ export const MosaicGrid = forwardRef<MosaicGridHandle, MosaicGridProps>(function
         }}
         {...frameHandlers}
       >
-        <div
-          ref={transformLayerRef}
-          className="absolute inset-0"
-          style={{ transformOrigin: 'center' }}
-        >
-          {/* One canvas replaces ~40k <img> nodes; painted imperatively in the effect. */}
-          <canvas
-            ref={canvasRef}
-            className="absolute inset-0 w-full h-full"
-            style={{ imageRendering: 'auto', display: hasMosaic ? 'block' : 'none' }}
-          />
-          {!hasMosaic && (
-            // Colours still resolving (or unreadable) — show the target as a placeholder.
-            <img
-              src={image.url}
-              alt={image.label}
-              className="absolute inset-0 w-full h-full object-cover"
-              draggable={false}
-            />
-          )}
-        </div>
-        {/* Crisp overlay: the base canvas is CSS-scaled by the transform and blurs
-          when zoomed in, so this sibling (not transformed) re-rasterizes just the
-          visible cells at device res each frame, mapping the slice straight into
-          frame pixels. Hidden until few enough cells are visible to redraw per
-          frame (scale > 1 AND cols*rows/scale² ≤ DETAIL_MAX_CELLS); see drawDetail. */}
-        <canvas
-          ref={detailRef}
-          className="absolute inset-0 w-full h-full pointer-events-none"
-          style={{ opacity: 0, transition: 'opacity 0ms ease-out' }}
+        <MosaicLayer
+          transformLayerRef={transformLayerRef}
+          canvasRef={canvasRef}
+          hasMosaic={hasMosaic}
+          image={image}
         />
-        {/* Subtle vignette */}
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background: 'radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.4) 100%)',
-          }}
-        />
-
-        {/* Processing spinner — shown while the worker computes the tile match. */}
-        {matching && (
-          <div className="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-black/50 text-white/80 backdrop-blur-sm pointer-events-none">
-            <IconLoader2 size={ICON_SIZE.md} className="animate-spin" />
-          </div>
-        )}
-
+        <DetailOverlay detailRef={detailRef} />
+        <Vignette />
+        {matching && <ProcessingSpinner />}
         <ZoomControls onZoomIn={zoomIn} onZoomOut={zoomOut} onReset={resetZoom} />
       </div>
     </div>
