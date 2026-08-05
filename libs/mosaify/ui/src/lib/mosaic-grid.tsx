@@ -20,7 +20,7 @@ import {
   type Transform,
 } from './mosaic-canvas';
 import { renderJpeg, renderPdf, renderSvg } from './mosaic-export';
-import { ICON_SIZE } from '../../../../shared/ui/src/lib/icon-size';
+import { ICON_SIZE } from '@react-mono/shared-ui';
 
 const MIN_SCALE = 1;
 const MAX_SCALE = 150;
@@ -47,9 +47,9 @@ export interface MosaicGridProps {
   /** Album/playlist artwork used as mosaic tiles. Each carries an average `color`. */
   tiles: SourceImage[];
   /** Tile count along the image's longer edge; the shorter edge follows its aspect. */
-  resolution?: number;
+  resolution: number;
   /** Selected matching-algorithm id (see MATCH_ALGORITHMS). Controlled by the parent. */
-  algorithm?: MatchAlgorithmId;
+  algorithm: MatchAlgorithmId;
   /** Reports the derived grid once the image aspect is known (for stats/labels). */
   onGrid?: (grid: { cols: number; rows: number }) => void;
 }
@@ -106,16 +106,16 @@ function ZoomButton({ label, onClick, children }: ZoomButtonProps) {
 // whose average colour is nearest to the sampled colour. The grid dimensions are
 // derived from the image's aspect ratio (see `sampleGrid`), not fixed.
 export const MosaicGrid = forwardRef<MosaicGridHandle, MosaicGridProps>(function MosaicGrid(
-  { image, tiles, resolution = 22, algorithm = DEFAULT_MATCH_ALGORITHM, onGrid },
+  { image, tiles, resolution, algorithm, onGrid },
   ref,
 ) {
-  const [dims, setDims] = useState<{ cols: number; rows: number } | null>(null);
+  const [dimensions, setDimensions] = useState<{ cols: number; rows: number } | null>(null);
   // True while the worker is computing a match, to show a spinner over the canvas.
   const [matching, setMatching] = useState(false);
   // Sampled target grid for the current image, reused when only the algorithm changes.
   const sampledRef = useRef<SampledGrid | null>(null);
   const frameRef = useRef<HTMLDivElement>(null);
-  const contentRef = useRef<HTMLDivElement>(null);
+  const transformLayerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   // Overlay canvas, redrawn crisp on zoom-settle (see applyTransform's idle timer).
   const detailRef = useRef<HTMLCanvasElement>(null);
@@ -173,13 +173,12 @@ export const MosaicGrid = forwardRef<MosaicGridHandle, MosaicGridProps>(function
     rafRef.current = requestAnimationFrame(() => {
       rafRef.current = null;
       const t = transformRef.current;
-      if (contentRef.current) {
-        const content = contentRef.current;
-        content.style.transform = `translate3d(${t.x}px, ${t.y}px, 0) scale(${t.scale})`;
-        content.style.willChange = 'transform';
+      if (transformLayerRef.current) {
+        const transformLayer = transformLayerRef.current;
+        transformLayer.style.transform = `translate3d(${t.x}px, ${t.y}px, 0) scale(${t.scale})`;
+        transformLayer.style.willChange = 'transform';
       }
-      // Redraw the crisp overlay in the same frame — no settle delay, so zooming
-      // stays sharp. drawDetail decides whether it's cheap enough to show.
+      // Redraw the crisp overlay in the same frame if "cheap" enough
       drawDetail();
       if (frameRef.current) {
         const zoomed = t.scale > MIN_SCALE;
@@ -316,7 +315,7 @@ export const MosaicGrid = forwardRef<MosaicGridHandle, MosaicGridProps>(function
   useEffect(() => {
     let active = true;
     resetZoom();
-    setDims(null);
+    setDimensions(null);
     // New image invalidates prior sample/tiles/data.
     sampledRef.current = null;
     tileCacheRef.current = new Map();
@@ -324,7 +323,7 @@ export const MosaicGrid = forwardRef<MosaicGridHandle, MosaicGridProps>(function
     sampleGrid(image.url, resolution).then((sampled) => {
       if (!active || !sampled) return;
       sampledRef.current = sampled;
-      setDims({ cols: sampled.cols, rows: sampled.rows });
+      setDimensions({ cols: sampled.cols, rows: sampled.rows });
       onGrid?.({ cols: sampled.cols, rows: sampled.rows });
     });
     return () => {
@@ -404,7 +403,7 @@ export const MosaicGrid = forwardRef<MosaicGridHandle, MosaicGridProps>(function
     return () => {
       active = false;
     };
-  }, [algorithm, tiles, dims, drawDetail, getMatchWorker]);
+  }, [algorithm, tiles, dimensions, drawDetail, getMatchWorker]);
 
   // Cancel any pending frame on unmount. Reset the ref too: without this a
   // StrictMode double-mount leaves rafRef stuck non-null, so every later
@@ -421,9 +420,9 @@ export const MosaicGrid = forwardRef<MosaicGridHandle, MosaicGridProps>(function
     [],
   );
 
-  const cols = dims?.cols ?? resolution;
-  const rows = dims?.rows ?? resolution;
-  const hasMosaic = dims !== null;
+  const cols = dimensions?.cols ?? resolution;
+  const rows = dimensions?.rows ?? resolution;
+  const hasMosaic = dimensions !== null;
 
   // Expose the painted mosaic for download/share. Renders a fresh high-resolution
   // export (see renderJpeg/renderSvg/renderPdf) rather than reading the GPU-capped
@@ -465,7 +464,11 @@ export const MosaicGrid = forwardRef<MosaicGridHandle, MosaicGridProps>(function
         onPointerCancel={endDrag}
         onDoubleClick={resetZoom}
       >
-        <div ref={contentRef} className="absolute inset-0" style={{ transformOrigin: 'center' }}>
+        <div
+          ref={transformLayerRef}
+          className="absolute inset-0"
+          style={{ transformOrigin: 'center' }}
+        >
           {/* One canvas replaces ~40k <img> nodes; painted imperatively in the effect. */}
           <canvas
             ref={canvasRef}
