@@ -287,26 +287,29 @@ over:
 
 ## Memoization
 
-Use `useCallback` / `useMemo` only where they earn it. A memoized value is worth it only when its stable identity is actually consumed by:
+A memoized value is **load-bearing** when its stable identity is actually consumed by:
 
 * a `React.memo` child (so it can skip re-rendering), or
 * a dependency array of another `useEffect` / `useMemo` / `useCallback`.
 
-Do **not** wrap a handler "for consistency" or by default. It has no effect — and adds noise — when the callback is only ever passed to a non-memoized child, or re-wrapped in a fresh inline closure (`onClick={() => handler()}`) on every render anyway.
+Always memoize load-bearing callbacks — an unstable identity there is a bug, not just noise (e.g. it re-fires an effect or tears down a listener).
 
-Wrap when it matters:
+Beyond that, wrapping handlers in `useCallback` is **acceptable, not discouraged**. When a component defines a family of related handlers (e.g. pointer/zoom handlers where some are load-bearing and some feed plain DOM props), keeping the whole family memoized for consistency is fine — the uniformity aids readability and makes it safe to later add one to a dependency array without hunting for which are stable. Don't force-remove `useCallback` from a handler just because it's currently only passed to a DOM element or an inline closure.
+
+Load-bearing — memoization is required:
 
 ```tsx
 // onGrid is a dep of an expensive effect inside <MosaicGrid> — a new
-// identity each render would re-fire that effect. Memoization is load-bearing.
+// identity each render would re-fire that effect.
 const handleGrid = useCallback((g: GridSize) => setGrid(g), []);
 ```
 
-Leave it plain when it doesn't:
+Optional but fine — part of a consistently-memoized handler group:
 
 ```tsx
-// Only ever called from inline closures; child isn't memoized. useCallback is dead weight.
-const saveExport = async (render, ext) => { ... };
+// Passed to a plain <div>'s onPointerDown; memoized alongside its
+// load-bearing siblings (handlePointerMove, endDrag) for consistency.
+const handlePointerDown = useCallback((e: ReactPointerEvent) => { ... }, []);
 ```
 
 ---
