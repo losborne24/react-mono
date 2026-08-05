@@ -145,11 +145,9 @@ export const MosaicGrid = forwardRef<MosaicGridHandle, MosaicGridProps>(function
   // Baseline for the current pinch gesture (null when fewer than 2 pointers down).
   const pinchRef = useRef<{ dist: number; scale: number } | null>(null);
 
-  // Redraw the crisp overlay for the current transform. Runs every frame during
-  // motion (no settle delay), so it must stay cheap: only when the visible-cell
-  // count is small enough to redraw at 60fps. At/near scale 1 the base is already
-  // ~1:1 (and the whole grid is visible → too many cells), so we hide the overlay
-  // and let the base show; the overlay only takes over once zoomed in.
+  // Redraw the crisp overlay during motion. Only update it per frame when the
+  // visible-cell count is low enough for 60fps; otherwise hide it and show the
+  // base canvas.
   const drawDetail = useCallback(() => {
     const frame = frameRef.current;
     const detail = detailRef.current;
@@ -157,7 +155,7 @@ export const MosaicGrid = forwardRef<MosaicGridHandle, MosaicGridProps>(function
     if (!frame || !detail || !data) return;
     const rect = frame.getBoundingClientRect();
     // Visible cells ≈ total / scale² (each axis shrinks by `scale`). Above the cap
-    // the per-frame drawImage cost risks dropping frames — defer to the base.
+    // the per-frame drawImage cost risks dropping frames — fall back to the base.
     const t = transformRef.current;
     const visibleCells = (data.cols * data.rows) / (t.scale * t.scale);
     if (t.scale <= MIN_SCALE || visibleCells > DETAIL_MAX_CELLS) {
